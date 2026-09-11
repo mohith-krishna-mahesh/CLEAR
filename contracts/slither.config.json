@@ -1,0 +1,8 @@
+{
+  "filter_paths": "node_modules|test",
+  "solc_remaps": [
+    "@openzeppelin/=node_modules/@openzeppelin/"
+  ],
+  "fail_on": "high",
+  "legacy_ast": false
+}

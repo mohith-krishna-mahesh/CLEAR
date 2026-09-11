@@ -1,0 +1,27 @@
+{
+  "name": "@clear/contracts",
+  "version": "0.1.0",
+  "description": "Smart contracts for CLEAR settlement protocol",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "hardhat compile",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:fuzz": "forge test",
+    "lint": "prettier --check 'contracts/**/*.sol' 'test/**/*.ts' 'scripts/**/*.ts'",
+    "deploy:local": "hardhat run scripts/deploy.ts --network besu-local",
+    "grant-trust:local": "hardhat run scripts/grant-genesis-trust.ts --network besu-local"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.12.12",
+    "chai": "^4.4.1",
+    "ethers": "^6.12.1",
+    "hardhat": "^2.22.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

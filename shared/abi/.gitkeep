@@ -1,0 +1,1 @@
+# This directory is populated with contract ABIs upon running `pnpm --filter contracts run deploy:local`

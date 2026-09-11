@@ -1,0 +1,18 @@
+# Node configuration for Besu Validator 1
+genesis-file = "/opt/besu/genesis.json"
+data-path = "/opt/besu/data"
+
+rpc-http-enabled = true
+rpc-http-host = "0.0.0.0"
+rpc-http-port = 8545
+rpc-http-api = ["ETH", "NET", "IBFT", "WEB3"]
+rpc-http-cors-origins = ["*"]
+host-allowlist = ["*"]
+
+p2p-enabled = true
+p2p-port = 30303
+discovery-enabled = true
+
+miner-enabled = true
+miner-coinbase = "0x9e246e090df4b4b0e504c4078e47f202ebdc3f52"
+logging = "INFO"

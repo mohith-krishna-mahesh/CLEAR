@@ -1,0 +1,6 @@
+packages:
+  - 'contracts'
+  - 'services/*'
+  - 'frontend/*'
+  - 'shared'
+  - 'subgraph'

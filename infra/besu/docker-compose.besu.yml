@@ -1,0 +1,56 @@
+services:
+  besu-node-1:
+    image: hyperledger/besu:24.1.0
+    container_name: clear-besu-node-1
+    restart: unless-stopped
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+    volumes:
+      - ./genesis.json:/opt/besu/genesis.json:ro
+      - ./validators/validator-1/config.toml:/opt/besu/config.toml:ro
+      - besu-data-1:/opt/besu/data
+    command:
+      - --config-file=/opt/besu/config.toml
+    networks:
+      - clear-network
+
+  besu-node-2:
+    image: hyperledger/besu:24.1.0
+    container_name: clear-besu-node-2
+    restart: unless-stopped
+    volumes:
+      - ./genesis.json:/opt/besu/genesis.json:ro
+      - ./validators/validator-2/config.toml:/opt/besu/config.toml:ro
+      - besu-data-2:/opt/besu/data
+    command:
+      - --config-file=/opt/besu/config.toml
+    depends_on:
+      - besu-node-1
+    networks:
+      - clear-network
+
+  besu-node-3:
+    image: hyperledger/besu:24.1.0
+    container_name: clear-besu-node-3
+    restart: unless-stopped
+    volumes:
+      - ./genesis.json:/opt/besu/genesis.json:ro
+      - ./validators/validator-3/config.toml:/opt/besu/config.toml:ro
+      - besu-data-3:/opt/besu/data
+    command:
+      - --config-file=/opt/besu/config.toml
+    depends_on:
+      - besu-node-1
+    networks:
+      - clear-network
+
+volumes:
+  besu-data-1:
+  besu-data-2:
+  besu-data-3:
+
+networks:
+  clear-network:
+    name: clear-network
+    driver: bridge

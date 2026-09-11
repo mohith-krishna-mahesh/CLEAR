@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Build, Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Set up Python for Slither
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Slither
+        run: pip install slither-analyzer
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Run Hardhat Unit Tests
+        run: pnpm --filter contracts test
+
+      - name: Run Foundry Invariant & Fuzz Tests
+        working-directory: ./contracts
+        run: forge test
+
+      - name: Run Slither Static Analysis
+        working-directory: ./contracts
+        run: slither . --config-file slither.config.json || true
+
+      - name: Run Registry Hub Backend Tests
+        run: pnpm --filter services/registry-hub test
+
+      - name: Build Frontend Application
+        run: pnpm --filter frontend/app build

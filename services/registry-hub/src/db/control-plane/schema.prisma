@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_PLANE_DATABASE_URL")
+}
+
+model Registry {
+  id            String   @id @default(cuid())
+  onChainId     BigInt   @unique
+  name          String
+  jurisdiction  String
+  signerAddress String   @unique
+  tier          String
+  createdAt     DateTime @default(now())
+}
+
+model User {
+  id           String   @id @default(cuid())
+  registryId   String
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+}

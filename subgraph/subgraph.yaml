@@ -1,0 +1,65 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  # ADDRESS WIRING NOTE:
+  # In local development, P2 will script injection of addresses from contracts/deployments/besu-local.json
+  # into this file (or use mustache template subgraph.template.yaml -> subgraph.yaml).
+  # Below are default placeholder addresses for pre-deployment scaffolding.
+  - kind: ethereum/contract
+    name: RegistryDirectory
+    network: mainnet # graph-node maps network name to Besu endpoint
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: RegistryDirectory
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Registry
+      abis:
+        - name: RegistryDirectory
+          file: ../shared/abi/RegistryDirectory.json
+      eventHandlers:
+        - event: RegistryApplied(indexed uint256,indexed address,string,string)
+          handler: handleRegistryApplied
+        - event: RegistryObserved(indexed uint256)
+          handler: handleRegistryObserved
+        - event: RegistryApproved(indexed uint256)
+          handler: handleRegistryApproved
+        - event: RegistryRejected(indexed uint256)
+          handler: handleRegistryRejected
+        - event: RegistryRevoked(indexed uint256)
+          handler: handleRegistryRevoked
+        - event: SignerRotated(indexed uint256,indexed address,indexed address)
+          handler: handleSignerRotated
+      file: ./src/directory-mapping.ts
+
+  - kind: ethereum/contract
+    name: CLEARSettlement
+    network: mainnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: CLEARSettlement
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+      abis:
+        - name: CLEARSettlement
+          file: ../shared/abi/CLEARSettlement.json
+      eventHandlers:
+        - event: TransferInitiated(indexed uint256,indexed address,indexed address,bytes32,uint256)
+          handler: handleTransferInitiated
+        - event: TransferCompleted(indexed uint256,uint256)
+          handler: handleTransferCompleted
+        - event: TransferCancelled(indexed uint256)
+          handler: handleTransferCancelled
+        - event: TransferExpired(indexed uint256)
+          handler: handleTransferExpired
+      file: ./src/settlement-mapping.ts

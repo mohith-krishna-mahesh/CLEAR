@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TENANT_DATABASE_URL_BASE")
+}
+
+model Credit {
+  id           String   @id @default(cuid())
+  projectName  String
+  vintage      Int
+  amount       Float
+  ownerCompany String
+  status       String   // ACTIVE | RESERVED | TRANSFERRED
+  createdAt    DateTime @default(now())
+}
+
+model SignerSecret {
+  id         String   @id @default(cuid())
+  ciphertext String
+  iv         String
+  authTag    String
+  createdAt  DateTime @default(now())
+}
+
+model TransferCache {
+  id           String   @id @default(cuid())
+  onChainId    BigInt   @unique
+  direction    String   // OUTGOING | INCOMING
+  counterparty String
+  amount       Float
+  status       String
+  updatedAt    DateTime @updatedAt
+}

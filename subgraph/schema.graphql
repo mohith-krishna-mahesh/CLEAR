@@ -1,0 +1,21 @@
+type Registry @entity {
+  id: ID!                  # registryId as string
+  signer: Bytes!
+  name: String!
+  jurisdiction: String!
+  metadataURI: String!
+  tier: String!            # mirrors TrustTier enum as string
+  appliedAt: BigInt!
+  decidedAt: BigInt
+}
+
+type Transfer @entity {
+  id: ID!                  # transferId as string
+  sourceRegistry: Bytes!
+  destRegistry: Bytes!
+  creditReference: Bytes!
+  amount: BigInt!
+  status: String!           # INITIATED | COMPLETED | CANCELLED | EXPIRED
+  initiatedAt: BigInt!
+  completedAt: BigInt
+}

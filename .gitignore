@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build and distribution
+dist/
+build/
+out/
+.next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Blockchain & Contract artifacts
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+contracts/deployments/
+!contracts/deployments/.gitkeep
+broadcast/
+
+# Shared ABI generated files
+shared/abi/*
+!shared/abi/.gitkeep
+
+# Subgraph generated
+subgraph/build/
+subgraph/generated/
+
+# Database & Volumes
+*.sqlite
+*.db
+pgdata/
+data/
+
+# Logs & Temporary
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.DS_Store
+*.swp
+*.bak
+coverage/
+.turbo/

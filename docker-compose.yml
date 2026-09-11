@@ -1,0 +1,94 @@
+# Note: "include" directive requires Docker Compose v2.20+
+include:
+  - infra/besu/docker-compose.besu.yml
+  - infra/blockscout/docker-compose.blockscout.yml
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clear-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clear_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - clear-network
+
+  registry-hub:
+    build:
+      context: .
+      dockerfile: services/registry-hub/Dockerfile
+    container_name: clear-registry-hub
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      RPC_URL: http://besu-node-1:8545
+      CONTROL_PLANE_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/clear_db?schema=control_plane
+      TENANT_DATABASE_URL_BASE: postgresql://postgres:postgres@postgres:5432/clear_db
+      JWT_SECRET: super-secret-jwt-key-change-in-production-min-32-chars
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      PORT: 3001
+    depends_on:
+      - postgres
+    networks:
+      - clear-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/app/Dockerfile
+    container_name: clear-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - registry-hub
+    networks:
+      - clear-network
+
+  graph-node:
+    image: graphprotocol/graph-node:v0.35.0
+    container_name: clear-graph-node
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # GraphQL HTTP
+      - "8001:8001" # GraphQL WS
+      - "8020:8020" # JSON-RPC admin
+      - "8030:8030" # Subgraph index node
+      - "8040:8040" # Prometheus metrics
+    environment:
+      postgres_host: postgres
+      postgres_user: postgres
+      postgres_pass: postgres
+      postgres_db: clear_graph_db
+      ipfs: 'ipfs:5001'
+      ethereum: 'besu:http://besu-node-1:8545'
+      GRAPH_LOG: info
+    depends_on:
+      - postgres
+      - ipfs
+    networks:
+      - clear-network
+
+  ipfs:
+    image: ipfs/go-ipfs:v0.14.0
+    container_name: clear-ipfs
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    networks:
+      - clear-network
+
+volumes:
+  pgdata:
+
+networks:
+  clear-network:
+    name: clear-network
+    driver: bridge
