@@ -1,42 +1,59 @@
 services:
+
   blockscout-db:
     image: postgres:16-alpine
     container_name: clear-blockscout-db
     restart: unless-stopped
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: blockscout
+
     volumes:
       - blockscout-data:/var/lib/postgresql/data
+
     networks:
       - clear-network
+
 
   blockscout:
     image: blockscout/blockscout:latest
     container_name: clear-blockscout
     restart: unless-stopped
+
+    command:
+      - /app/bin/blockscout
+      - start
+
     ports:
       - "4000:4000"
+
     environment:
       ETHEREUM_JSONRPC_VARIANT: "besu"
       ETHEREUM_JSONRPC_HTTP_URL: "http://besu-node-1:8545"
       DATABASE_URL: "postgresql://postgres:postgres@blockscout-db:5432/blockscout"
+      ECTO_USE_SSL: "false"
       PORT: "4000"
       NETWORK: "CLEAR Besu Local"
       SUBNETWORK: "IBFT2"
       COIN: "CLEAR"
       SHOW_PRICE_CHART: "false"
       ENABLE_RUST_VERIFICATION_SERVICE: "false"
+      DISABLE_WEBAPP: "false"
+
     depends_on:
       - blockscout-db
+
     networks:
       - clear-network
+
 
 volumes:
   blockscout-data:
 
+
 networks:
   clear-network:
+    external: true
     name: clear-network
-    driver: bridge

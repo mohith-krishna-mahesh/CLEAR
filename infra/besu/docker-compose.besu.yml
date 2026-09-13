@@ -9,7 +9,7 @@ services:
     volumes:
       - ./genesis.json:/opt/besu/genesis.json:ro
       - ./validators/validator-1/config.toml:/opt/besu/config.toml:ro
-      - besu-data-1:/opt/besu/data
+      - ./validators/validator-1/data:/opt/besu/data
     command:
       - --config-file=/opt/besu/config.toml
     networks:
@@ -22,7 +22,7 @@ services:
     volumes:
       - ./genesis.json:/opt/besu/genesis.json:ro
       - ./validators/validator-2/config.toml:/opt/besu/config.toml:ro
-      - besu-data-2:/opt/besu/data
+      - ./validators/validator-2/data:/opt/besu/data
     command:
       - --config-file=/opt/besu/config.toml
     depends_on:
@@ -37,7 +37,7 @@ services:
     volumes:
       - ./genesis.json:/opt/besu/genesis.json:ro
       - ./validators/validator-3/config.toml:/opt/besu/config.toml:ro
-      - besu-data-3:/opt/besu/data
+      - ./validators/validator-3/data:/opt/besu/data
     command:
       - --config-file=/opt/besu/config.toml
     depends_on:

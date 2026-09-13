@@ -46,3 +46,6 @@ pnpm-debug.log*
 *.bak
 coverage/
 .turbo/
+# Besu generated/private validator material
+infra/besu/networkFiles/
+infra/besu/validators/*/data/key
