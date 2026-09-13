@@ -2,12 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Button } from "../../components/Button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../lib/auth-context";
-import { apiClient, CreditRecord } from "../../lib/api-client";
+import {
+  apiClient,
+  CreditRecord,
+  generateRandomAddress,
+} from "../../lib/api-client";
 import {
   graphqlClient,
   GET_VERIFIED_REGISTRIES,
   SubgraphRegistry,
-  DEFAULT_DEMO_REGISTRIES,
+  getDemoRegistries,
 } from "../../lib/graphql-client";
 
 export const NewTransfer: React.FC = () => {
@@ -25,65 +29,63 @@ export const NewTransfer: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form fields
+  // Address entry mode: 'select' from verified or 'custom'
+  const [addressMode, setAddressMode] = useState<"select" | "custom">("select");
   const [destRegistryAddress, setDestRegistryAddress] = useState("");
   const [selectedCreditId, setSelectedCreditId] = useState(initialCreditId);
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState<string>("500");
+
+  const loadFormData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch VERIFIED registries from live Subgraph query or persistent storage
+      let counterparties: SubgraphRegistry[] = [];
+      try {
+        const subData = await graphqlClient.request<{
+          registries: SubgraphRegistry[];
+        }>(GET_VERIFIED_REGISTRIES);
+        counterparties = subData.registries.filter(
+          (r) =>
+            r.id !== registryId &&
+            r.signer.toLowerCase() !== session?.signerAddress?.toLowerCase(),
+        );
+      } catch {
+        const demoRegs = getDemoRegistries();
+        counterparties = demoRegs.filter(
+          (r) =>
+            r.tier === "VERIFIED" &&
+            r.id !== registryId &&
+            r.signer.toLowerCase() !== session?.signerAddress?.toLowerCase(),
+        );
+      }
+
+      setVerifiedRegistries(counterparties);
+      if (counterparties.length > 0 && !destRegistryAddress) {
+        setDestRegistryAddress(counterparties[0].signer);
+      }
+
+      // 2. Fetch active domestic credits
+      const creditRes = await apiClient.getCredits(registryId);
+      if (creditRes?.credits) {
+        const active = creditRes.credits.filter((c) => c.status === "ACTIVE");
+        setActiveCredits(active);
+        if (active.length > 0) {
+          const matched = initialCreditId
+            ? active.find((c) => c.id === initialCreditId) || active[0]
+            : active[0];
+          setSelectedCreditId(matched.id);
+          setAmount(matched.amount.toString());
+        }
+      }
+    } catch {
+      setError("Failed to load initial transfer data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadFormData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // 1. Fetch VERIFIED registries from live Subgraph query
-        try {
-          const subData = await graphqlClient.request<{
-            registries: SubgraphRegistry[];
-          }>(GET_VERIFIED_REGISTRIES);
-          // Filter out current registry
-          const counterparties = subData.registries.filter(
-            (r) =>
-              r.id !== registryId &&
-              r.signer.toLowerCase() !== session?.signerAddress?.toLowerCase(),
-          );
-          setVerifiedRegistries(counterparties);
-          if (counterparties.length > 0 && !destRegistryAddress) {
-            setDestRegistryAddress(counterparties[0].signer);
-          }
-        } catch (err) {
-          console.warn(
-            "Subgraph unreachable for verified registries, using fallback:",
-            err,
-          );
-          const counterparties = DEFAULT_DEMO_REGISTRIES.filter(
-            (r) => r.tier === "VERIFIED" && r.id !== registryId,
-          );
-          setVerifiedRegistries(counterparties);
-          if (counterparties.length > 0 && !destRegistryAddress) {
-            setDestRegistryAddress(counterparties[0].signer);
-          }
-        }
-
-        // 2. Fetch active domestic credits
-        const creditRes = await apiClient.getCredits();
-        if (creditRes?.credits) {
-          const active = creditRes.credits.filter((c) => c.status === "ACTIVE");
-          setActiveCredits(active);
-          if (active.length > 0 && !selectedCreditId) {
-            setSelectedCreditId(active[0].id);
-            setAmount(active[0].amount.toString());
-          } else if (initialCreditId) {
-            const match = active.find((c) => c.id === initialCreditId);
-            if (match) setAmount(match.amount.toString());
-          }
-        }
-      } catch (err) {
-        setError("Failed to load initial form data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadFormData();
   }, [registryId, session?.signerAddress, initialCreditId]);
 
@@ -97,14 +99,33 @@ export const NewTransfer: React.FC = () => {
     }
   };
 
+  const handleGenerateRandomRecipient = () => {
+    const randomAddr = generateRandomAddress();
+    setAddressMode("custom");
+    setDestRegistryAddress(randomAddr);
+  };
+
+  const handleMintQuickCredit = async () => {
+    const newCredit = await apiClient.issueDemoCredit({
+      projectName: "Sovereign Solar & Reforestation Project",
+      vintage: 2024,
+      amount: 1000,
+      ownerCompany: session?.name || "National Sovereign Holdings",
+      registryId: registryId || "1",
+    });
+    await loadFormData();
+    setSelectedCreditId(newCredit.id);
+    setAmount("500");
+  };
+
   const handleInitiate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!destRegistryAddress) {
-      setError("Please select a verified destination counterparty registry.");
+      setError("Please specify a destination registry address.");
       return;
     }
     if (!selectedCreditId) {
-      setError("Please choose an active domestic credit to transfer.");
+      setError("Please select an active domestic credit from inventory.");
       return;
     }
 
@@ -116,7 +137,7 @@ export const NewTransfer: React.FC = () => {
 
     if (selectedCredit && numAmount > selectedCredit.amount) {
       setError(
-        `Amount cannot exceed available active credit volume (${selectedCredit.amount} tCO2e).`,
+        `Amount cannot exceed available active volume (${selectedCredit.amount} tCO2e).`,
       );
       return;
     }
@@ -128,16 +149,9 @@ export const NewTransfer: React.FC = () => {
         destRegistryAddress,
         creditId: selectedCreditId,
         amount: numAmount,
+        sourceSigner: session?.signerAddress,
+        sourceRegistryId: registryId,
       });
-
-      // Update local credit cache if using demo mode
-      const savedCredits: CreditRecord[] = JSON.parse(
-        localStorage.getItem("demo_credits") || "[]",
-      );
-      const updatedCredits = savedCredits.map((c) =>
-        c.id === selectedCreditId ? { ...c, status: "RESERVED" as const } : c,
-      );
-      localStorage.setItem("demo_credits", JSON.stringify(updatedCredits));
 
       navigate("/registry/transfers/history");
     } catch (err) {
@@ -161,7 +175,7 @@ export const NewTransfer: React.FC = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-500 mt-1">
-          Locks domestic inventory to RESERVED and submits an immutable
+          Locks domestic inventory to RESERVED and commits an immutable
           bilateral settlement agreement to Hyperledger Besu.
         </p>
       </div>
@@ -172,59 +186,137 @@ export const NewTransfer: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleInitiate} className="space-y-4">
-        {/* Live Subgraph-populated Destination Dropdown */}
+      <form onSubmit={handleInitiate} className="space-y-5">
+        {/* Destination Selection: Dropdown or Custom Address */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
-            Destination Registry (Live Subgraph Verified Registries)
-          </label>
-          <select
-            required
-            value={destRegistryAddress}
-            onChange={(e) => setDestRegistryAddress(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none bg-white"
-            disabled={loading || verifiedRegistries.length === 0}
-          >
-            {verifiedRegistries.length === 0 ? (
-              <option value="">No other verified registries found</option>
-            ) : (
-              verifiedRegistries.map((r) => (
-                <option key={r.id} value={r.signer}>
-                  {r.name} ({r.jurisdiction}) — {r.signer.substring(0, 8)}...
-                  {r.signer.substring(r.signer.length - 6)}
-                </option>
-              ))
-            )}
-          </select>
-          <p className="text-xs text-gray-400 mt-1">
-            Populated directly from on-chain RegistryDirectory events indexed by
-            Subgraph.
-          </p>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Destination Registry
+            </label>
+            <div className="flex space-x-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setAddressMode("select")}
+                className={`px-2 py-0.5 rounded font-medium ${
+                  addressMode === "select"
+                    ? "bg-green-100 text-green-800 font-bold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Select Verified
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={() => setAddressMode("custom")}
+                className={`px-2 py-0.5 rounded font-medium ${
+                  addressMode === "custom"
+                    ? "bg-green-100 text-green-800 font-bold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Custom Address
+              </button>
+            </div>
+          </div>
+
+          {addressMode === "select" ? (
+            <div>
+              <select
+                required
+                value={destRegistryAddress}
+                onChange={(e) => setDestRegistryAddress(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none bg-white"
+                disabled={loading || verifiedRegistries.length === 0}
+              >
+                {verifiedRegistries.length === 0 ? (
+                  <option value="">No other verified registries found</option>
+                ) : (
+                  verifiedRegistries.map((r) => (
+                    <option key={r.id} value={r.signer}>
+                      {r.name} ({r.jurisdiction}) — {r.signer.substring(0, 8)}
+                      ...
+                      {r.signer.substring(r.signer.length - 6)}
+                    </option>
+                  ))
+                )}
+              </select>
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>Populated live from on-chain RegistryDirectory.</span>
+                <button
+                  type="button"
+                  onClick={handleGenerateRandomRecipient}
+                  className="text-green-600 hover:underline font-semibold"
+                >
+                  + Use New Custom Address
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <input
+                type="text"
+                required
+                value={destRegistryAddress}
+                onChange={(e) => setDestRegistryAddress(e.target.value)}
+                placeholder="0x... (Recipient Registry Signer Address)"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:border-green-500 focus:outline-none"
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>
+                  Enter any valid sovereign counterparty signer address.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleGenerateRandomRecipient}
+                  className="text-green-600 hover:underline font-semibold"
+                >
+                  ⚡ Generate Random Address
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Domestic Credit Record Selection */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
-            Domestic Credit to Lock & Transfer
-          </label>
-          <select
-            required
-            value={selectedCreditId}
-            onChange={(e) => handleCreditChange(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none bg-white"
-            disabled={loading || activeCredits.length === 0}
-          >
-            {activeCredits.length === 0 ? (
-              <option value="">No ACTIVE credits available in inventory</option>
-            ) : (
-              activeCredits.map((c) => (
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Domestic Credit to Lock & Transfer
+            </label>
+            {activeCredits.length === 0 && (
+              <button
+                type="button"
+                onClick={handleMintQuickCredit}
+                className="text-xs text-green-600 hover:underline font-semibold"
+              >
+                + Mint Demo Credit
+              </button>
+            )}
+          </div>
+
+          {activeCredits.length === 0 ? (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 flex items-center justify-between">
+              <span>No ACTIVE credits in domestic inventory.</span>
+              <Button size="sm" type="button" onClick={handleMintQuickCredit}>
+                + Mint Starter Credit
+              </Button>
+            </div>
+          ) : (
+            <select
+              required
+              value={selectedCreditId}
+              onChange={(e) => handleCreditChange(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none bg-white"
+            >
+              {activeCredits.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.id} - {c.projectName} ({c.vintage}) — Available:{" "}
                   {c.amount.toLocaleString()} tCO2e ({c.ownerCompany})
                 </option>
-              ))
-            )}
-          </select>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Transfer Amount Input */}
@@ -232,20 +324,31 @@ export const NewTransfer: React.FC = () => {
           <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
             Settlement Volume (tCO2e)
           </label>
-          <input
-            type="number"
-            required
-            min="1"
-            max={selectedCredit?.amount || 999999}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
-            placeholder="e.g. 500"
-          />
+          <div className="relative mt-1">
+            <input
+              type="number"
+              required
+              min="1"
+              max={selectedCredit?.amount || 9999999}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+              placeholder="Enter volume to transfer (e.g. 500)"
+            />
+            {selectedCredit && (
+              <button
+                type="button"
+                onClick={() => setAmount(selectedCredit.amount.toString())}
+                className="absolute right-2 top-2 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-semibold"
+              >
+                MAX ({selectedCredit.amount})
+              </button>
+            )}
+          </div>
           {selectedCredit && (
             <p className="text-xs text-gray-500 mt-1">
-              Maximum active volume available for this credit:{" "}
-              <strong>{selectedCredit.amount} tCO2e</strong>
+              Available active balance:{" "}
+              <strong>{selectedCredit.amount.toLocaleString()} tCO2e</strong>
             </p>
           )}
         </div>
@@ -254,15 +357,10 @@ export const NewTransfer: React.FC = () => {
           <Button
             type="submit"
             className="w-full"
-            disabled={
-              submitting ||
-              loading ||
-              activeCredits.length === 0 ||
-              verifiedRegistries.length === 0
-            }
+            disabled={submitting || loading || activeCredits.length === 0}
           >
             {submitting
-              ? "Initiating on-chain settlement..."
+              ? "Committing on-chain settlement..."
               : "Commit On-Chain Settlement"}
           </Button>
         </div>

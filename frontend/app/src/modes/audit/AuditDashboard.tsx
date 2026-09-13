@@ -8,8 +8,8 @@ import {
   GET_AUDIT_METRICS,
   SubgraphRegistry,
   SubgraphTransfer,
-  DEFAULT_DEMO_REGISTRIES,
-  DEFAULT_DEMO_TRANSFERS,
+  getDemoRegistries,
+  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 export const AuditDashboard: React.FC = () => {
@@ -43,12 +43,10 @@ export const AuditDashboard: React.FC = () => {
     } catch (err) {
       console.warn("Could not reach live Subgraph, using baseline data:", err);
       setIsLive(false);
-      const verified = DEFAULT_DEMO_REGISTRIES.filter(
-        (r) => r.tier === "VERIFIED",
-      );
-      const completed = DEFAULT_DEMO_TRANSFERS.filter(
-        (t) => t.status === "COMPLETED",
-      );
+      const demoRegs = getDemoRegistries();
+      const demoTrans = getDemoTransfers();
+      const verified = demoRegs.filter((r) => r.tier === "VERIFIED");
+      const completed = demoTrans.filter((t) => t.status === "COMPLETED");
       setVerifiedCount(verified.length);
       setCompletedCount(completed.length);
       const volume = completed.reduce(
@@ -56,7 +54,7 @@ export const AuditDashboard: React.FC = () => {
         0,
       );
       setTotalVolume(volume);
-      setRecentTransfers(DEFAULT_DEMO_TRANSFERS);
+      setRecentTransfers(demoTrans);
     } finally {
       setLoading(false);
     }

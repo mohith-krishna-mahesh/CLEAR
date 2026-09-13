@@ -7,7 +7,7 @@ import {
   graphqlClient,
   GET_REGISTRY_TRANSFERS,
   SubgraphTransfer,
-  DEFAULT_DEMO_TRANSFERS,
+  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 const BLOCKSCOUT_URL =
@@ -56,15 +56,17 @@ export const TransferHistory: React.FC = () => {
         "Could not query live Subgraph for registry transfers, using fallback:",
         err,
       );
-      const fallbackRecords: MergedTransferRecord[] =
-        DEFAULT_DEMO_TRANSFERS.map((t) => {
+      const demoTransfers = getDemoTransfers();
+      const fallbackRecords: MergedTransferRecord[] = demoTransfers.map(
+        (t: SubgraphTransfer) => {
           const isOutgoing = t.sourceRegistry.toLowerCase() === currentSigner;
           return {
             ...t,
             direction: isOutgoing ? "OUTGOING" : "INCOMING",
             counterparty: isOutgoing ? t.destRegistry : t.sourceRegistry,
           };
-        });
+        },
+      );
       setRecords(fallbackRecords);
     } finally {
       setLoading(false);

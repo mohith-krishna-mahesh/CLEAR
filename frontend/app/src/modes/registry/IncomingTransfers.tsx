@@ -8,7 +8,7 @@ import {
   graphqlClient,
   GET_INCOMING_TRANSFERS,
   SubgraphTransfer,
-  DEFAULT_DEMO_TRANSFERS,
+  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 export const IncomingTransfers: React.FC = () => {
@@ -32,9 +32,13 @@ export const IncomingTransfers: React.FC = () => {
         }>(GET_INCOMING_TRANSFERS, { destSigner: destSigner.toLowerCase() });
         setTransfers(data.transfers);
       } catch {
-        // Fallback demo transfers
-        const incoming = DEFAULT_DEMO_TRANSFERS.filter(
-          (t) => t.status === "INITIATED",
+        const demoTransfers = getDemoTransfers();
+        const incoming = demoTransfers.filter(
+          (t: SubgraphTransfer) =>
+            t.status === "INITIATED" &&
+            (t.destRegistry.toLowerCase() === destSigner.toLowerCase() ||
+              destSigner.toLowerCase() ===
+                "0xf17f52151ebef6c7334fad080c5704d77216b732"),
         );
         setTransfers(incoming);
       }

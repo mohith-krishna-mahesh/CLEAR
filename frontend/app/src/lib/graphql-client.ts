@@ -240,3 +240,36 @@ export const DEFAULT_DEMO_TRANSFERS: SubgraphTransfer[] = [
     completedAt: null,
   },
 ];
+
+import { getStoredRegistries, getStoredTransfers } from "./api-client";
+
+export function getDemoRegistries(): SubgraphRegistry[] {
+  try {
+    const list = getStoredRegistries();
+    return list.map((r) => ({
+      id: r.id,
+      signer: r.signerAddress,
+      name: r.name,
+      jurisdiction: r.jurisdiction,
+      metadataURI: r.metadataURI,
+      tier: r.tier,
+      appliedAt: Math.floor(new Date(r.createdAt).getTime() / 1000).toString(),
+      decidedAt:
+        r.tier === "VERIFIED"
+          ? Math.floor(new Date(r.createdAt).getTime() / 1000).toString()
+          : null,
+    }));
+  } catch {
+    return DEFAULT_DEMO_REGISTRIES;
+  }
+}
+
+export function getDemoTransfers(): SubgraphTransfer[] {
+  try {
+    const list = getStoredTransfers();
+    if (list.length > 0) return list;
+    return DEFAULT_DEMO_TRANSFERS;
+  } catch {
+    return DEFAULT_DEMO_TRANSFERS;
+  }
+}

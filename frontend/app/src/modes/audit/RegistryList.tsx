@@ -6,7 +6,7 @@ import {
   graphqlClient,
   GET_ALL_REGISTRIES,
   SubgraphRegistry,
-  DEFAULT_DEMO_REGISTRIES,
+  getDemoRegistries,
 } from "../../lib/graphql-client";
 
 export const RegistryList: React.FC = () => {
@@ -27,7 +27,7 @@ export const RegistryList: React.FC = () => {
         "Subgraph unreachable, falling back to default registries:",
         err,
       );
-      setRegistries(DEFAULT_DEMO_REGISTRIES);
+      setRegistries(getDemoRegistries());
     } finally {
       setLoading(false);
     }

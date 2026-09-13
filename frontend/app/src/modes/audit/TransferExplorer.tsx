@@ -6,7 +6,7 @@ import {
   graphqlClient,
   GET_ALL_TRANSFERS,
   SubgraphTransfer,
-  DEFAULT_DEMO_TRANSFERS,
+  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 const BLOCKSCOUT_URL =
@@ -33,7 +33,7 @@ export const TransferExplorer: React.FC = () => {
         "Subgraph not reachable, using fallback transfer records:",
         err,
       );
-      setTransfers(DEFAULT_DEMO_TRANSFERS);
+      setTransfers(getDemoTransfers());
     } finally {
       setLoading(false);
     }
