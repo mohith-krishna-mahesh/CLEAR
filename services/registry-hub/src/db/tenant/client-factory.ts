@@ -9,7 +9,6 @@ const tenantClients = new Map<string, PrismaClient>();
  * via Postgres search_path, preserving strict schema isolation without codegen locking.
  */
 export function getTenantClient(registryId: string): PrismaClient {
-  // TODO(P1): implement schema-per-tenant connection caching — unqualified table names in tenant schema.prisma mean this actually routes correctly via search_path, unlike a multiSchema-tagged client would
   const existing = tenantClients.get(registryId);
   if (existing) {
     return existing;
@@ -17,8 +16,7 @@ export function getTenantClient(registryId: string): PrismaClient {
 
   const schemaName = `registry_${registryId}`;
   const baseUrl = env.TENANT_DATABASE_URL_BASE;
-  const separator = baseUrl.includes("?") ? "&" : "?";
-  const tenantUrl = `${baseUrl}${separator}schema=${schemaName}`;
+  const tenantUrl = `${baseUrl}?schema=${schemaName}`;
 
   const client = new PrismaClient({
     datasources: {

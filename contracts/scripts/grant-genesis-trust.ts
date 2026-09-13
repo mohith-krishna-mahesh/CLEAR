@@ -6,6 +6,10 @@ import * as path from "path";
  * TEST FIXTURE SCRIPT:
  * Bypasses the HTTP onboarding flow to directly admit N test registries
  * for local dev and CI integration speed. This is NOT the production flow.
+ *
+ * Signers default to the Hyperledger Besu genesis alloc accounts so this
+ * works against besu-local. On a Hardhat node they are funded from the
+ * council/deployer if their balance is zero.
  */
 async function main() {
   const deploymentPath = path.join(__dirname, "..", "deployments", "besu-local.json");
@@ -26,34 +30,52 @@ async function main() {
       name: "Registry Alpha",
       jurisdiction: "Country-Alpha",
       metadataURI: "ipfs://QmAlphaMetadataFixture",
-      signer: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // Hardhat Account #1
+      privateKey: "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
     },
     {
       name: "Registry Beta",
       jurisdiction: "Country-Beta",
       metadataURI: "ipfs://QmBetaMetadataFixture",
-      signer: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", // Hardhat Account #2
+      privateKey: "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
     },
   ];
 
   for (const reg of testRegistries) {
-    const existingId = await directory.signerToRegistry(reg.signer);
+    const regSigner = new ethers.Wallet(reg.privateKey, ethers.provider);
+    const existingId = await directory.signerToRegistry(regSigner.address);
     if (existingId !== 0n) {
-      console.log(`[Genesis Trust] Signer ${reg.signer} is already registered with ID: ${existingId}`);
+      const info = await directory.getRegistry(existingId);
+      const verified = await directory.isVerified(regSigner.address);
+      console.log(
+        `[Genesis Trust] Signer ${regSigner.address} already registered with ID: ${existingId} (verified=${verified}, tier=${info.tier})`
+      );
       continue;
     }
 
-    const regSigner = await ethers.getSigner(reg.signer);
-    console.log(`[Genesis Trust] Applying for ${reg.name} from signer ${reg.signer}...`);
+    const balance = await ethers.provider.getBalance(regSigner.address);
+    if (balance === 0n) {
+      console.log(`[Genesis Trust] Funding ${regSigner.address} from council...`);
+      const fundTx = await council.sendTransaction({
+        to: regSigner.address,
+        value: ethers.parseEther("10"),
+      });
+      await fundTx.wait();
+    }
+
+    console.log(`[Genesis Trust] Applying for ${reg.name} from signer ${regSigner.address}...`);
     const applyTx = await directory.connect(regSigner).applyAsRegistry(reg.name, reg.jurisdiction, reg.metadataURI);
     await applyTx.wait();
 
-    const regId = await directory.signerToRegistry(reg.signer);
+    const regId = await directory.signerToRegistry(regSigner.address);
     console.log(`[Genesis Trust] Approving registry ID ${regId} via council...`);
     const approveTx = await directory.connect(council).approveRegistry(regId);
     await approveTx.wait();
 
-    console.log(`[Genesis Trust] Successfully verified ${reg.name} (ID: ${regId})`);
+    const verified = await directory.isVerified(regSigner.address);
+    if (!verified) {
+      throw new Error(`[Genesis Trust] ${reg.name} was approved but isVerified returned false`);
+    }
+    console.log(`[Genesis Trust] Successfully verified ${reg.name} (ID: ${regId}, signer: ${regSigner.address})`);
   }
 }
 

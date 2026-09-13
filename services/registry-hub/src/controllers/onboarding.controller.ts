@@ -1,13 +1,42 @@
 import { Request, Response } from "express";
+import { OnboardingService } from "../services/onboarding.service";
+
+const onboardingService = new OnboardingService();
 
 export class OnboardingController {
   async apply(req: Request, res: Response): Promise<void> {
-    // TODO(P1): parse body, validate fields, invoke OnboardingService.onboardRegistry
-    res.status(501).json({ error: "OnboardingController.apply: Not implemented" });
+    const { name, jurisdiction, metadataURI } = req.body ?? {};
+    if (!name || !jurisdiction || !metadataURI) {
+      res.status(400).json({ error: "name, jurisdiction, and metadataURI are required" });
+      return;
+    }
+    try {
+      const result = await onboardingService.onboardRegistry({
+        name: String(name),
+        jurisdiction: String(jurisdiction),
+        metadataURI: String(metadataURI),
+      });
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "Onboarding failed" });
+    }
   }
 
   async getStatus(req: Request, res: Response): Promise<void> {
-    // TODO(P1): retrieve onboarding status from control_plane database
-    res.status(501).json({ error: "OnboardingController.getStatus: Not implemented" });
+    const registryId = req.params.registryId;
+    if (!registryId) {
+      res.status(400).json({ error: "registryId is required" });
+      return;
+    }
+    try {
+      const status = await onboardingService.getStatus(registryId);
+      if (!status) {
+        res.status(404).json({ error: "Registry not found" });
+        return;
+      }
+      res.status(200).json(status);
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "Failed to load status" });
+    }
   }
 }

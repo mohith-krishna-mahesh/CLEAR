@@ -32,9 +32,6 @@ async function main() {
     fs.mkdirSync(deploymentsDir, { recursive: true });
   }
 
-  const directoryArtifact = await ethers.getContractFactory("RegistryDirectory");
-  const settlementArtifact = await ethers.getContractFactory("CLEARSettlement");
-
   const deploymentData = {
     network: network.name,
     chainId: network.config.chainId || 1337,
@@ -64,11 +61,11 @@ async function main() {
 
   fs.writeFileSync(
     path.join(sharedAbiDir, "RegistryDirectory.json"),
-    JSON.stringify(directoryArtifact.interface.formatJson(), null, 2)
+    JSON.stringify(JSON.parse(directory.interface.formatJson()), null, 2)
   );
   fs.writeFileSync(
     path.join(sharedAbiDir, "CLEARSettlement.json"),
-    JSON.stringify(settlementArtifact.interface.formatJson(), null, 2)
+    JSON.stringify(JSON.parse(settlement.interface.formatJson()), null, 2)
   );
   console.log(`[Deploy] Mirrored ABIs to: ${sharedAbiDir}`);
 }
