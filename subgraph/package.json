@@ -4,6 +4,7 @@
   "description": "The Graph subgraph indexing CLEAR settlement and directory contracts",
   "license": "Apache-2.0",
   "scripts": {
+    "inject-addresses": "node scripts/inject-addresses.js",
     "codegen": "graph codegen",
     "build": "graph build",
     "create-local": "graph create --node http://localhost:8020/ clear/subgraph",

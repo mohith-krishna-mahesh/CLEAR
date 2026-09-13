@@ -12,13 +12,16 @@ export const Button: React.FC<ButtonProps> = ({
   className = "",
   ...props
 }) => {
-  const baseClasses = "inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
-  
+  const baseClasses =
+    "inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
+
   const variantClasses = {
     primary: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-400",
+    secondary:
+      "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-400",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-    outline: "border border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-green-500",
+    outline:
+      "border border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-green-500",
   }[variant];
 
   const sizeClasses = {
@@ -28,7 +31,10 @@ export const Button: React.FC<ButtonProps> = ({
   }[size];
 
   return (
-    <button className={`${baseClasses} ${variantClasses} ${sizeClasses} ${className}`} {...props}>
+    <button
+      className={`${baseClasses} ${variantClasses} ${sizeClasses} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );
