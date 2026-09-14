@@ -1,0 +1,17 @@
+{
+  "config" : {
+    "chainId" : 1337,
+    "ibft2" : {
+      "blockperiodseconds" : 2,
+      "epochlength" : 30000,
+      "requesttimeoutseconds" : 4
+    }
+  },
+  "nonce" : "0x0",
+  "timestamp" : "0x0",
+  "gasLimit" : "0x1fffffffffffff",
+  "difficulty" : "0x1",
+  "mixHash" : "0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365",
+  "alloc" : { },
+  "extraData" : "0xf869a00000000000000000000000000000000000000000000000000000000000000000f83f94778ddff30a3fa8d23eabed800bf5377ec92309a6943fbb7f2700aa14893d52c96669d4f8a4970e9a28945b9a1480ad2c571c9778a49d048e9c7f4508c2d6808400000000c0"
+}

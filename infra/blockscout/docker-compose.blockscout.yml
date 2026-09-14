@@ -23,8 +23,9 @@ services:
     restart: unless-stopped
 
     command:
-      - /app/bin/blockscout
-      - start
+      - /bin/sh
+      - -c
+      - bin/blockscout eval "Elixir.Explorer.ReleaseTasks.create_and_migrate()" && bin/blockscout start
 
     ports:
       - "4000:4000"
@@ -41,6 +42,7 @@ services:
       SHOW_PRICE_CHART: "false"
       ENABLE_RUST_VERIFICATION_SERVICE: "false"
       DISABLE_WEBAPP: "false"
+      INDEXER_DISABLE_BLOCK_REWARD_FETCHER: "true"
 
     depends_on:
       - blockscout-db
