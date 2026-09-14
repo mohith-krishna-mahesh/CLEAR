@@ -12,20 +12,26 @@ describe("RegistryDirectory", () => {
   let stranger: SignerWithAddress;
 
   beforeEach(async () => {
-    [owner, council, registryA, registryB, stranger] = await ethers.getSigners();
+    [owner, council, registryA, registryB, stranger] =
+      await ethers.getSigners();
     const Factory = await ethers.getContractFactory("RegistryDirectory");
-    directory = (await Factory.deploy(owner.address, council.address)) as RegistryDirectory;
+    directory = (await Factory.deploy(
+      owner.address,
+      council.address,
+    )) as RegistryDirectory;
     await directory.waitForDeployment();
   });
 
   describe("apply and approval flow", () => {
     it("should allow a registry to apply and council to approve (apply -> approve -> isVerified true)", async () => {
       // Apply as registry
-      const tx = await directory.connect(registryA).applyAsRegistry(
-        "Registry Alpha",
-        "Jurisdiction-A",
-        "https://registry-a.org/metadata.json"
-      );
+      const tx = await directory
+        .connect(registryA)
+        .applyAsRegistry(
+          "Registry Alpha",
+          "Jurisdiction-A",
+          "https://registry-a.org/metadata.json",
+        );
       await tx.wait();
 
       const regId = await directory.signerToRegistry(registryA.address);
@@ -44,11 +50,13 @@ describe("RegistryDirectory", () => {
     });
 
     it("should allow council to reject an application (apply -> reject -> isVerified false)", async () => {
-      await directory.connect(registryB).applyAsRegistry(
-        "Registry Beta",
-        "Jurisdiction-B",
-        "https://registry-b.org/metadata.json"
-      );
+      await directory
+        .connect(registryB)
+        .applyAsRegistry(
+          "Registry Beta",
+          "Jurisdiction-B",
+          "https://registry-b.org/metadata.json",
+        );
       const regId = await directory.signerToRegistry(registryB.address);
 
       // Council rejects
@@ -60,7 +68,9 @@ describe("RegistryDirectory", () => {
     });
 
     it("reverts if non-council tries to approve", async () => {
-      await directory.connect(registryA).applyAsRegistry("Reg A", "Jur A", "uri");
+      await directory
+        .connect(registryA)
+        .applyAsRegistry("Reg A", "Jur A", "uri");
       const regId = await directory.signerToRegistry(registryA.address);
 
       await expect(directory.connect(stranger).approveRegistry(regId))
@@ -69,9 +79,13 @@ describe("RegistryDirectory", () => {
     });
 
     it("reverts if signer applies twice", async () => {
-      await directory.connect(registryA).applyAsRegistry("Reg A", "Jur A", "uri");
+      await directory
+        .connect(registryA)
+        .applyAsRegistry("Reg A", "Jur A", "uri");
       await expect(
-        directory.connect(registryA).applyAsRegistry("Reg A2", "Jur A2", "uri2")
+        directory
+          .connect(registryA)
+          .applyAsRegistry("Reg A2", "Jur A2", "uri2"),
       )
         .to.be.revertedWithCustomError(directory, "SignerAlreadyRegistered")
         .withArgs(registryA.address);
@@ -80,17 +94,23 @@ describe("RegistryDirectory", () => {
 
   describe("signer rotation", () => {
     it("allows registry signer to rotate to an unallocated signer address", async () => {
-      await directory.connect(registryA).applyAsRegistry("Reg A", "Jur A", "uri");
+      await directory
+        .connect(registryA)
+        .applyAsRegistry("Reg A", "Jur A", "uri");
       const regId = await directory.signerToRegistry(registryA.address);
       await directory.connect(council).approveRegistry(regId);
 
       const newSigner = stranger;
-      await expect(directory.connect(registryA).rotateSigner(regId, newSigner.address))
+      await expect(
+        directory.connect(registryA).rotateSigner(regId, newSigner.address),
+      )
         .to.emit(directory, "SignerRotated")
         .withArgs(regId, registryA.address, newSigner.address);
 
       expect(await directory.signerToRegistry(registryA.address)).to.equal(0n);
-      expect(await directory.signerToRegistry(newSigner.address)).to.equal(regId);
+      expect(await directory.signerToRegistry(newSigner.address)).to.equal(
+        regId,
+      );
       expect(await directory.isVerified(newSigner.address)).to.be.true;
       expect(await directory.isVerified(registryA.address)).to.be.false;
     });

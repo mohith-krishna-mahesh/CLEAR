@@ -3,10 +3,8 @@ import { Table } from "../../components/Table";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/Button";
 import {
-  graphqlClient,
-  GET_ALL_TRANSFERS,
+  loadTransfers as fetchTransfers,
   SubgraphTransfer,
-  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 const BLOCKSCOUT_URL =
@@ -18,29 +16,21 @@ export const TransferExplorer: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const loadTransfers = async () => {
+  const refreshTransfers = async () => {
     setLoading(true);
     try {
-      const data = await graphqlClient.request<{
-        transfers: SubgraphTransfer[];
-      }>(GET_ALL_TRANSFERS, {
-        first: 100,
-        skip: 0,
-      });
-      setTransfers(data.transfers);
+      const { transfers } = await fetchTransfers();
+      setTransfers(transfers);
     } catch (err) {
-      console.warn(
-        "Subgraph not reachable, using fallback transfer records:",
-        err,
-      );
-      setTransfers(getDemoTransfers());
+      console.warn("Failed to load transfers:", err);
+      setTransfers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTransfers();
+    refreshTransfers();
   }, []);
 
   const filteredTransfers = useMemo(() => {
@@ -84,7 +74,7 @@ export const TransferExplorer: React.FC = () => {
         <Button
           size="sm"
           variant="outline"
-          onClick={loadTransfers}
+          onClick={refreshTransfers}
           disabled={loading}
         >
           {loading ? "Loading..." : "Refresh"}

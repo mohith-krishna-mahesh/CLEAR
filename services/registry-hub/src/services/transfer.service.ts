@@ -38,10 +38,17 @@ export class TransferService {
   constructor(
     private readonly settlement = new SettlementClient(),
     private readonly inventory = getCreditInventory(),
-    private readonly references = getCreditReference()
+    private readonly references = getCreditReference(),
   ) {}
 
-  async initiate(registryId: string, dto: InitiateTransferDto): Promise<{ transferId: string }> {
+  async initiate(
+    registryId: string,
+    dto: InitiateTransferDto,
+  ): Promise<{
+    success: boolean;
+    transferId: string;
+    transfer: Record<string, string | null>;
+  }> {
     await ensureControlPlane();
     const source = await this.requireRegistry(registryId);
     const dest = await controlPlane.registry.findUnique({
@@ -51,13 +58,15 @@ export class TransferService {
     const credit = await this.loadCredit(registryId, dto.creditId);
     await this.inventory.reserve(registryId, dto.creditId, dto.amount);
 
-    const creditRef = await this.references.computeReference(this.toCreditRecord(credit, dto.amount));
+    const creditRef = await this.references.computeReference(
+      this.toCreditRecord(credit, dto.amount),
+    );
     const signer = await getRegistrySigner(registryId, source.signerAddress);
     const transferId = await this.settlement.initiateTransfer(
       dto.destRegistryAddress,
       creditRef,
       BigInt(Math.floor(dto.amount)),
-      signer
+      signer,
     );
 
     await this.upsertTransferCache(registryId, {
@@ -78,7 +87,20 @@ export class TransferService {
       });
     }
 
-    return { transferId: transferId.toString() };
+    return {
+      success: true,
+      transferId: transferId.toString(),
+      transfer: {
+        id: transferId.toString(),
+        sourceRegistry: source.signerAddress,
+        destRegistry: dto.destRegistryAddress,
+        creditReference: creditRef,
+        amount: String(dto.amount),
+        status: "INITIATED",
+        initiatedAt: Math.floor(Date.now() / 1000).toString(),
+        completedAt: null,
+      },
+    };
   }
 
   async complete(registryId: string, transferId: string): Promise<void> {
@@ -87,8 +109,12 @@ export class TransferService {
     const onChainId = BigInt(transferId);
     const transfer = await this.settlement.getTransfer(onChainId);
 
-    if (transfer.destRegistry.toLowerCase() !== dest.signerAddress.toLowerCase()) {
-      throw new Error("Only the destination registry can complete this transfer");
+    if (
+      transfer.destRegistry.toLowerCase() !== dest.signerAddress.toLowerCase()
+    ) {
+      throw new Error(
+        "Only the destination registry can complete this transfer",
+      );
     }
 
     const signer = await getRegistrySigner(registryId, dest.signerAddress);
@@ -97,11 +123,16 @@ export class TransferService {
     const source = await controlPlane.registry.findUnique({
       where: { signerAddress: transfer.sourceRegistry },
     });
-    const creditId = await this.findReservedCreditId(source?.id, Number(transfer.amount));
+    const creditId = await this.findReservedCreditId(
+      source?.id,
+      Number(transfer.amount),
+    );
 
     if (source && creditId) {
       await this.inventory.commitOutgoing(source.id, creditId);
-      const outgoing = await this.loadCredit(source.id, creditId).catch(() => null);
+      const outgoing = await this.loadCredit(source.id, creditId).catch(
+        () => null,
+      );
       await this.inventory.creditIncoming(
         registryId,
         this.toCreditRecord(
@@ -113,8 +144,8 @@ export class TransferService {
             ownerCompany: dest.name,
             status: "ACTIVE",
           },
-          Number(transfer.amount)
-        )
+          Number(transfer.amount),
+        ),
       );
     } else {
       await this.inventory.creditIncoming(registryId, {
@@ -138,14 +169,20 @@ export class TransferService {
     const onChainId = BigInt(transferId);
     const transfer = await this.settlement.getTransfer(onChainId);
 
-    if (transfer.sourceRegistry.toLowerCase() !== source.signerAddress.toLowerCase()) {
+    if (
+      transfer.sourceRegistry.toLowerCase() !==
+      source.signerAddress.toLowerCase()
+    ) {
       throw new Error("Only the source registry can cancel this transfer");
     }
 
     const signer = await getRegistrySigner(registryId, source.signerAddress);
     await this.settlement.cancelTransfer(onChainId, signer);
 
-    const creditId = await this.findReservedCreditId(registryId, Number(transfer.amount));
+    const creditId = await this.findReservedCreditId(
+      registryId,
+      Number(transfer.amount),
+    );
     if (creditId) {
       await this.inventory.release(registryId, creditId);
     }
@@ -159,34 +196,73 @@ export class TransferService {
     }
   }
 
-  async listTransfers(registryId: string): Promise<Array<Record<string, string | number>>> {
+  async listTransfers(
+    registryId: string,
+  ): Promise<Array<Record<string, string | number | null>>> {
     const client = getTenantClient(registryId);
+    const source = await this.requireRegistry(registryId);
     const rows = (await client.$queryRawUnsafe(
-      `SELECT * FROM "TransferCache" ORDER BY "updatedAt" DESC`
+      `SELECT * FROM "TransferCache" ORDER BY "updatedAt" DESC`,
     )) as TransferCacheRow[];
-    return rows.map((row) => ({
-      id: row.id,
-      onChainId: row.onChainId.toString(),
-      direction: row.direction,
-      counterparty: row.counterparty,
-      amount: Number(row.amount),
-      status: row.status,
-    }));
+
+    const transfers = [];
+    for (const row of rows) {
+      let sourceRegistry = source.signerAddress;
+      let destRegistry = row.counterparty;
+      let creditReference = "0x";
+      let initiatedAt = Math.floor(
+        new Date(row.updatedAt).getTime() / 1000,
+      ).toString();
+      let completedAt: string | null = null;
+      try {
+        const onchain = await this.settlement.getTransfer(row.onChainId);
+        sourceRegistry = onchain.sourceRegistry;
+        destRegistry = onchain.destRegistry;
+        creditReference = onchain.creditReference;
+        initiatedAt = onchain.initiatedAt.toString();
+        completedAt =
+          onchain.completedAt > 0n ? onchain.completedAt.toString() : null;
+      } catch {
+        if (row.direction === "INCOMING") {
+          destRegistry = source.signerAddress;
+          sourceRegistry = row.counterparty;
+        }
+      }
+      transfers.push({
+        id: row.onChainId.toString(),
+        onChainId: row.onChainId.toString(),
+        direction: row.direction,
+        sourceRegistry,
+        destRegistry,
+        counterparty: row.counterparty,
+        creditReference,
+        amount: String(row.amount),
+        status: row.status,
+        initiatedAt,
+        completedAt,
+      });
+    }
+    return transfers;
   }
 
   private async requireRegistry(registryId: string) {
-    const registry = await controlPlane.registry.findUnique({ where: { id: registryId } });
+    const registry = await controlPlane.registry.findUnique({
+      where: { id: registryId },
+    });
     if (!registry) {
       throw new Error(`Registry ${registryId} not found`);
     }
     return registry;
   }
 
-  private async loadCredit(registryId: string, creditId: string): Promise<CreditRow> {
+  private async loadCredit(
+    registryId: string,
+    creditId: string,
+  ): Promise<CreditRow> {
     const client = getTenantClient(registryId);
     const rows = (await client.$queryRawUnsafe(
       `SELECT * FROM "Credit" WHERE "id" = $1 LIMIT 1`,
-      creditId
+      creditId,
     )) as CreditRow[];
     if (!rows[0]) {
       throw new Error(`Credit ${creditId} not found in registry ${registryId}`);
@@ -196,17 +272,17 @@ export class TransferService {
 
   private async findReservedCreditId(
     registryId: string | undefined,
-    amount: number
+    amount: number,
   ): Promise<string | null> {
     if (!registryId) return null;
     const client = getTenantClient(registryId);
     const rows = (await client.$queryRawUnsafe(
       `SELECT "id" FROM "Credit" WHERE "status" = 'RESERVED' AND "amount" = $1 LIMIT 1`,
-      amount
+      amount,
     )) as Array<{ id: string }>;
     if (rows[0]) return rows[0].id;
     const anyReserved = (await client.$queryRawUnsafe(
-      `SELECT "id" FROM "Credit" WHERE "status" = 'RESERVED' LIMIT 1`
+      `SELECT "id" FROM "Credit" WHERE "status" = 'RESERVED' LIMIT 1`,
     )) as Array<{ id: string }>;
     return anyReserved[0]?.id ?? null;
   }
@@ -229,18 +305,18 @@ export class TransferService {
       counterparty: string;
       amount: number;
       status: string;
-    }
+    },
   ): Promise<void> {
     const client = getTenantClient(registryId);
     const existing = (await client.$queryRawUnsafe(
       `SELECT "id" FROM "TransferCache" WHERE "onChainId" = $1 LIMIT 1`,
-      row.onChainId
+      row.onChainId,
     )) as Array<{ id: string }>;
     if (existing[0]) {
       await client.$executeRawUnsafe(
         `UPDATE "TransferCache" SET "status" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = $2`,
         row.status,
-        existing[0].id
+        existing[0].id,
       );
       return;
     }
@@ -252,16 +328,20 @@ export class TransferService {
       row.direction,
       row.counterparty,
       row.amount,
-      row.status
+      row.status,
     );
   }
 
-  private async markCache(registryId: string, onChainId: bigint, status: string): Promise<void> {
+  private async markCache(
+    registryId: string,
+    onChainId: bigint,
+    status: string,
+  ): Promise<void> {
     const client = getTenantClient(registryId);
     await client.$executeRawUnsafe(
       `UPDATE "TransferCache" SET "status" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "onChainId" = $2`,
       status,
-      onChainId
+      onChainId,
     );
   }
 }

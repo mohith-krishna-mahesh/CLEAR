@@ -8,10 +8,8 @@ import {
   generateRandomAddress,
 } from "../../lib/api-client";
 import {
-  graphqlClient,
-  GET_VERIFIED_REGISTRIES,
+  loadVerifiedRegistries,
   SubgraphRegistry,
-  getDemoRegistries,
 } from "../../lib/graphql-client";
 
 export const NewTransfer: React.FC = () => {
@@ -42,22 +40,13 @@ export const NewTransfer: React.FC = () => {
       // 1. Fetch VERIFIED registries from live Subgraph query or persistent storage
       let counterparties: SubgraphRegistry[] = [];
       try {
-        const subData = await graphqlClient.request<{
-          registries: SubgraphRegistry[];
-        }>(GET_VERIFIED_REGISTRIES);
-        counterparties = subData.registries.filter(
+        counterparties = (await loadVerifiedRegistries()).filter(
           (r) =>
             r.id !== registryId &&
             r.signer.toLowerCase() !== session?.signerAddress?.toLowerCase(),
         );
       } catch {
-        const demoRegs = getDemoRegistries();
-        counterparties = demoRegs.filter(
-          (r) =>
-            r.tier === "VERIFIED" &&
-            r.id !== registryId &&
-            r.signer.toLowerCase() !== session?.signerAddress?.toLowerCase(),
-        );
+        counterparties = [];
       }
 
       setVerifiedRegistries(counterparties);

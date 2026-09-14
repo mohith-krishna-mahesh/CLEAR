@@ -18,22 +18,30 @@ describe("CLEARSettlement", () => {
   const transferAmount = 1000n;
 
   beforeEach(async () => {
-    [owner, council, registryA, registryB, unverified] = await ethers.getSigners();
+    [owner, council, registryA, registryB, unverified] =
+      await ethers.getSigners();
 
-    const DirectoryFactory = await ethers.getContractFactory("RegistryDirectory");
-    directory = (await DirectoryFactory.deploy(owner.address, council.address)) as RegistryDirectory;
+    const DirectoryFactory =
+      await ethers.getContractFactory("RegistryDirectory");
+    directory = (await DirectoryFactory.deploy(
+      owner.address,
+      council.address,
+    )) as RegistryDirectory;
     await directory.waitForDeployment();
 
-    const SettlementFactory = await ethers.getContractFactory("CLEARSettlement");
+    const SettlementFactory =
+      await ethers.getContractFactory("CLEARSettlement");
     settlement = (await SettlementFactory.deploy(
       owner.address,
       await directory.getAddress(),
-      EXPIRY_WINDOW
+      EXPIRY_WINDOW,
     )) as CLEARSettlement;
     await settlement.waitForDeployment();
 
     // Onboard and approve registryA
-    await directory.connect(registryA).applyAsRegistry("Alpha", "Jur-A", "uriA");
+    await directory
+      .connect(registryA)
+      .applyAsRegistry("Alpha", "Jur-A", "uriA");
     const regAId = await directory.signerToRegistry(registryA.address);
     await directory.connect(council).approveRegistry(regAId);
 
@@ -45,11 +53,9 @@ describe("CLEARSettlement", () => {
 
   describe("transfer lifecycle", () => {
     it("should execute initiate -> complete happy path", async () => {
-      const tx = await settlement.connect(registryA).initiateTransfer(
-        registryB.address,
-        creditRef,
-        transferAmount
-      );
+      const tx = await settlement
+        .connect(registryA)
+        .initiateTransfer(registryB.address, creditRef, transferAmount);
       await tx.wait();
 
       const transferId = 1n;
@@ -60,8 +66,9 @@ describe("CLEARSettlement", () => {
       expect(transfer.status).to.equal(0); // INITIATED
 
       // Destination completes transfer
-      await expect(settlement.connect(registryB).completeTransfer(transferId))
-        .to.emit(settlement, "TransferCompleted");
+      await expect(
+        settlement.connect(registryB).completeTransfer(transferId),
+      ).to.emit(settlement, "TransferCompleted");
 
       const completed = await settlement.getTransfer(transferId);
       expect(completed.status).to.equal(1); // COMPLETED
@@ -70,18 +77,18 @@ describe("CLEARSettlement", () => {
 
     it("reverts when an unverified caller attempts initiateTransfer", async () => {
       await expect(
-        settlement.connect(unverified).initiateTransfer(registryB.address, creditRef, transferAmount)
+        settlement
+          .connect(unverified)
+          .initiateTransfer(registryB.address, creditRef, transferAmount),
       )
         .to.be.revertedWithCustomError(settlement, "NotVerifiedRegistry")
         .withArgs(unverified.address);
     });
 
     it("reverts when completeTransfer is called by wrong destination", async () => {
-      await settlement.connect(registryA).initiateTransfer(
-        registryB.address,
-        creditRef,
-        transferAmount
-      );
+      await settlement
+        .connect(registryA)
+        .initiateTransfer(registryB.address, creditRef, transferAmount);
       const transferId = 1n;
 
       // Caller is registryA (source) or unverified rather than registryB
@@ -91,11 +98,9 @@ describe("CLEARSettlement", () => {
     });
 
     it("handles expiry: expire before window reverts, after window succeeds", async () => {
-      await settlement.connect(registryA).initiateTransfer(
-        registryB.address,
-        creditRef,
-        transferAmount
-      );
+      await settlement
+        .connect(registryA)
+        .initiateTransfer(registryB.address, creditRef, transferAmount);
       const transferId = 1n;
 
       // Attempt to expire immediately before window has passed

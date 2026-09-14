@@ -65,31 +65,45 @@ export class SettlementClient {
     destRegistry: string,
     creditReference: string,
     amount: bigint,
-    signer: ethers.Signer
+    signer: ethers.Signer,
   ): Promise<bigint> {
     const connected = this.contract.connect(signer) as ethers.Contract;
-    const tx = await connected.initiateTransfer(destRegistry, creditReference, amount);
+    const tx = await connected.initiateTransfer(
+      destRegistry,
+      creditReference,
+      amount,
+    );
     const receipt = await tx.wait();
     const parsedId = this.parseTransferId(receipt);
     if (parsedId !== null) {
       return parsedId;
     }
-    throw new Error("SettlementClient.initiateTransfer: TransferInitiated event not found");
+    throw new Error(
+      "SettlementClient.initiateTransfer: TransferInitiated event not found",
+    );
   }
 
-  async completeTransfer(transferId: bigint, signer: ethers.Signer): Promise<void> {
+  async completeTransfer(
+    transferId: bigint,
+    signer: ethers.Signer,
+  ): Promise<void> {
     const connected = this.contract.connect(signer) as ethers.Contract;
     const tx = await connected.completeTransfer(transferId);
     await tx.wait();
   }
 
-  async cancelTransfer(transferId: bigint, signer: ethers.Signer): Promise<void> {
+  async cancelTransfer(
+    transferId: bigint,
+    signer: ethers.Signer,
+  ): Promise<void> {
     const connected = this.contract.connect(signer) as ethers.Contract;
     const tx = await connected.cancelTransfer(transferId);
     await tx.wait();
   }
 
-  private parseTransferId(receipt: ethers.TransactionReceipt | null): bigint | null {
+  private parseTransferId(
+    receipt: ethers.TransactionReceipt | null,
+  ): bigint | null {
     if (!receipt) return null;
     for (const log of receipt.logs) {
       try {

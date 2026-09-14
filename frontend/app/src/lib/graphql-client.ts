@@ -241,7 +241,77 @@ export const DEFAULT_DEMO_TRANSFERS: SubgraphTransfer[] = [
   },
 ];
 
-import { getStoredRegistries, getStoredTransfers } from "./api-client";
+import {
+  getStoredRegistries,
+  getStoredTransfers,
+  API_BASE_URL,
+} from "./api-client";
+
+export async function loadRegistries(): Promise<{
+  registries: SubgraphRegistry[];
+  source: "subgraph" | "api" | "demo";
+}> {
+  try {
+    const data = await graphqlClient.request<{
+      registries: SubgraphRegistry[];
+    }>(GET_ALL_REGISTRIES);
+    if (data.registries) {
+      return { registries: data.registries, source: "subgraph" };
+    }
+  } catch {
+    // fall through to registry-hub
+  }
+  try {
+    const res = await fetch(`${API_BASE_URL}/audit/registries`);
+    if (res.ok) {
+      const body = (await res.json()) as { registries: SubgraphRegistry[] };
+      return { registries: body.registries ?? [], source: "api" };
+    }
+  } catch {
+    // fall through to local demo seed
+  }
+  return { registries: getDemoRegistries(), source: "demo" };
+}
+
+export async function loadTransfers(): Promise<{
+  transfers: SubgraphTransfer[];
+  source: "subgraph" | "api" | "demo";
+}> {
+  try {
+    const data = await graphqlClient.request<{ transfers: SubgraphTransfer[] }>(
+      GET_ALL_TRANSFERS,
+      { first: 100, skip: 0 },
+    );
+    if (data.transfers) {
+      return { transfers: data.transfers, source: "subgraph" };
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const res = await fetch(`${API_BASE_URL}/audit/transfers`);
+    if (res.ok) {
+      const body = (await res.json()) as { transfers: SubgraphTransfer[] };
+      return { transfers: body.transfers ?? [], source: "api" };
+    }
+  } catch {
+    // fall through
+  }
+  return { transfers: getDemoTransfers(), source: "demo" };
+}
+
+export async function loadVerifiedRegistries(): Promise<SubgraphRegistry[]> {
+  try {
+    const data = await graphqlClient.request<{
+      registries: SubgraphRegistry[];
+    }>(GET_VERIFIED_REGISTRIES);
+    if (data.registries?.length) return data.registries;
+  } catch {
+    // fall through
+  }
+  const { registries } = await loadRegistries();
+  return registries.filter((r) => r.tier === "VERIFIED");
+}
 
 export function getDemoRegistries(): SubgraphRegistry[] {
   try {

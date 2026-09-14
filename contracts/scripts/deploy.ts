@@ -4,24 +4,39 @@ import * as path from "path";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log(`[Deploy] Deploying contracts with deployer: ${deployer.address}`);
+  console.log(
+    `[Deploy] Deploying contracts with deployer: ${deployer.address}`,
+  );
 
   // Council defaults to deployer in local development
   const councilAddress = process.env.COUNCIL_ADDRESS || deployer.address;
-  const expiryWindow = process.env.EXPIRY_WINDOW ? parseInt(process.env.EXPIRY_WINDOW, 10) : 3600;
+  const expiryWindow = process.env.EXPIRY_WINDOW
+    ? parseInt(process.env.EXPIRY_WINDOW, 10)
+    : 3600;
 
   // 1. Deploy RegistryDirectory
-  console.log(`[Deploy] Deploying RegistryDirectory (owner: ${deployer.address}, council: ${councilAddress})...`);
+  console.log(
+    `[Deploy] Deploying RegistryDirectory (owner: ${deployer.address}, council: ${councilAddress})...`,
+  );
   const DirectoryFactory = await ethers.getContractFactory("RegistryDirectory");
-  const directory = await DirectoryFactory.deploy(deployer.address, councilAddress);
+  const directory = await DirectoryFactory.deploy(
+    deployer.address,
+    councilAddress,
+  );
   await directory.waitForDeployment();
   const directoryAddress = await directory.getAddress();
   console.log(`[Deploy] RegistryDirectory deployed at: ${directoryAddress}`);
 
   // 2. Deploy CLEARSettlement
-  console.log(`[Deploy] Deploying CLEARSettlement (directory: ${directoryAddress}, expiryWindow: ${expiryWindow}s)...`);
+  console.log(
+    `[Deploy] Deploying CLEARSettlement (directory: ${directoryAddress}, expiryWindow: ${expiryWindow}s)...`,
+  );
   const SettlementFactory = await ethers.getContractFactory("CLEARSettlement");
-  const settlement = await SettlementFactory.deploy(deployer.address, directoryAddress, expiryWindow);
+  const settlement = await SettlementFactory.deploy(
+    deployer.address,
+    directoryAddress,
+    expiryWindow,
+  );
   await settlement.waitForDeployment();
   const settlementAddress = await settlement.getAddress();
   console.log(`[Deploy] CLEARSettlement deployed at: ${settlementAddress}`);
@@ -61,11 +76,11 @@ async function main() {
 
   fs.writeFileSync(
     path.join(sharedAbiDir, "RegistryDirectory.json"),
-    JSON.stringify(JSON.parse(directory.interface.formatJson()), null, 2)
+    JSON.stringify(JSON.parse(directory.interface.formatJson()), null, 2),
   );
   fs.writeFileSync(
     path.join(sharedAbiDir, "CLEARSettlement.json"),
-    JSON.stringify(JSON.parse(settlement.interface.formatJson()), null, 2)
+    JSON.stringify(JSON.parse(settlement.interface.formatJson()), null, 2),
   );
   console.log(`[Deploy] Mirrored ABIs to: ${sharedAbiDir}`);
 }

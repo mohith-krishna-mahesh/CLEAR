@@ -10,6 +10,9 @@ import { SimulatorInventoryAdapter } from "./credit-inventory/simulator.adapter"
 import { CreditReferenceStrategy } from "./credit-reference/credit-reference-strategy.interface";
 import { LocalHashReferenceStrategy } from "./credit-reference/local-hash.strategy";
 import { CADTrustMetadataStrategy } from "./credit-reference/cad-trust-metadata.strategy";
+import { VerificationStrategy } from "./verification/verification-strategy.interface";
+import { AutoApproveStrategy } from "./verification/auto-approve.strategy";
+import { ManualReviewStrategy } from "./verification/manual-review.strategy";
 
 /** Well-known local Besu genesis / Hardhat-funded keys for fixture registries. */
 const LOCAL_PRIVATE_KEYS: Record<string, string> = {
@@ -53,12 +56,69 @@ export function getCreditReference(): CreditReferenceStrategy {
   }
 }
 
+export function getVerification(): VerificationStrategy {
+  switch (env.VERIFICATION_MODE) {
+    case "manual-review":
+    case "manual":
+      return new ManualReviewStrategy();
+    case "auto-approve":
+    default:
+      return new AutoApproveStrategy();
+  }
+}
+
 export function getCouncilSigner(): ethers.Wallet {
   const pk =
     process.env.COUNCIL_PRIVATE_KEY ||
     process.env.PRIVATE_KEY ||
-    "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63";
-  return new ethers.Wallet(pk, provider);
+    process.env.FAUCET_PRIVATE_KEY ||
+    "";
+  if (pk) {
+    return new ethers.Wallet(pk, provider);
+  }
+  return new ethers.Wallet(
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    provider,
+  );
+}
+
+export async function getFunderWallet(): Promise<ethers.Wallet> {
+  const candidates = [
+    process.env.FAUCET_PRIVATE_KEY,
+    process.env.COUNCIL_PRIVATE_KEY,
+    process.env.PRIVATE_KEY,
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+  ].filter(Boolean) as string[];
+
+  for (const key of candidates) {
+    const wallet = new ethers.Wallet(key, provider);
+    try {
+      const balance = await provider.getBalance(wallet.address);
+      if (balance > ethers.parseEther("0.05")) {
+        return wallet;
+      }
+    } catch {
+      // try next
+    }
+  }
+  throw new Error("No funded faucet account found on the connected RPC");
+}
+
+export async function fundAddress(
+  address: string,
+  amountEth = "1",
+): Promise<void> {
+  const funder = await getFunderWallet();
+  const balance = await provider.getBalance(address);
+  if (balance >= ethers.parseEther("0.05")) {
+    return;
+  }
+  const tx = await funder.sendTransaction({
+    to: address,
+    value: ethers.parseEther(amountEth),
+  });
+  await tx.wait();
 }
 
 export function walletForAddress(address: string): ethers.Wallet | null {
@@ -71,7 +131,7 @@ export function walletForAddress(address: string): ethers.Wallet | null {
 
 export async function getRegistrySigner(
   registryId: string,
-  signerAddress: string
+  signerAddress: string,
 ): Promise<ethers.Signer> {
   const local = walletForAddress(signerAddress);
   if (local) {
@@ -86,7 +146,7 @@ class CustodyBackedSigner extends ethers.AbstractSigner {
   constructor(
     private readonly signerAddress: string,
     private readonly registryId: string,
-    private readonly custody: SignerCustodyStrategy
+    private readonly custody: SignerCustodyStrategy,
   ) {
     super(provider);
   }
@@ -99,7 +159,11 @@ class CustodyBackedSigner extends ethers.AbstractSigner {
     if (!nextProvider) {
       return this;
     }
-    return new CustodyBackedSigner(this.signerAddress, this.registryId, this.custody);
+    return new CustodyBackedSigner(
+      this.signerAddress,
+      this.registryId,
+      this.custody,
+    );
   }
 
   async signTransaction(tx: ethers.TransactionRequest): Promise<string> {
@@ -123,7 +187,7 @@ class CustodyBackedSigner extends ethers.AbstractSigner {
   async signTypedData(
     _domain: ethers.TypedDataDomain,
     _types: Record<string, ethers.TypedDataField[]>,
-    _value: Record<string, unknown>
+    _value: Record<string, unknown>,
   ): Promise<string> {
     throw new Error("CustodyBackedSigner.signTypedData is not supported");
   }

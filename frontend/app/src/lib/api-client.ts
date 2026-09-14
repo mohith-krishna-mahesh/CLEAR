@@ -1,6 +1,23 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
+export { API_BASE_URL };
+
+function demoFallbackEnabled(): boolean {
+  return import.meta.env.VITE_DEMO_FALLBACK === "true";
+}
+
+function isNetworkError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /failed to fetch|networkerror|load failed|econnrefused|network request failed/i.test(
+    msg,
+  );
+}
+
+function canFallback(err: unknown): boolean {
+  return demoFallbackEnabled() || isNetworkError(err);
+}
+
 export interface ApiUser {
   userId: string;
   email?: string;
@@ -34,6 +51,7 @@ export interface OnboardingResponse {
   signerAddress: string;
   tier: string;
   createdAt?: string;
+  token?: string;
 }
 
 export interface CreditRecord {
@@ -285,7 +303,8 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify(credentials),
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       // Offline fallback: check local registry store
       const isCouncil =
         credentials.role === "council" ||
@@ -380,7 +399,8 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify(payload),
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       // Offline fallback: save to clear_registered_registries
       const registries = getStoredRegistries();
       const newId = (registries.length + 1).toString();
@@ -434,7 +454,8 @@ class ApiClient {
       return await this.request<{ credits: CreditRecord[] }>(
         "/registry/credits",
       );
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredCredits();
       if (registryId) {
         return {
@@ -455,7 +476,8 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify(credit),
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredCredits();
       const newCredit: CreditRecord = {
         ...credit,
@@ -476,7 +498,8 @@ class ApiClient {
   async listTransfers(): Promise<{ transfers: StoredTransfer[] }> {
     try {
       return await this.request<{ transfers: StoredTransfer[] }>("/transfer");
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       return { transfers: getStoredTransfers() };
     }
   }
@@ -495,7 +518,8 @@ class ApiClient {
           body: JSON.stringify(payload),
         },
       );
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       // 1. Lock source credit to RESERVED
       const allCredits = getStoredCredits();
       const updatedCredits = allCredits.map((c) =>
@@ -542,7 +566,8 @@ class ApiClient {
           method: "POST",
         },
       );
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       // 1. Update transfer status to COMPLETED
       const allTransfers = getStoredTransfers();
       let completedAmount = 500;
@@ -594,7 +619,8 @@ class ApiClient {
       return await this.request(`/transfer/${transferId}/cancel`, {
         method: "POST",
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const allTransfers = getStoredTransfers();
       const updated = allTransfers.map((t) =>
         t.id === transferId ? { ...t, status: "CANCELLED" as const } : t,
@@ -610,7 +636,8 @@ class ApiClient {
       return await this.request<{ registries: PendingRegistry[] }>(
         "/governance/pending",
       );
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredRegistries();
       const pending = all
         .filter((r) => r.tier === "PENDING" || r.tier === "OBSERVER")
@@ -633,7 +660,8 @@ class ApiClient {
       return await this.request(`/governance/${registryId}/approve`, {
         method: "POST",
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredRegistries();
       const updated = all.map((r) =>
         r.id === registryId ? { ...r, tier: "VERIFIED" as const } : r,
@@ -648,7 +676,8 @@ class ApiClient {
       return await this.request(`/governance/${registryId}/reject`, {
         method: "POST",
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredRegistries();
       const updated = all.map((r) =>
         r.id === registryId ? { ...r, tier: "REVOKED" as const } : r,
@@ -663,7 +692,8 @@ class ApiClient {
       return await this.request(`/governance/${registryId}/promote`, {
         method: "POST",
       });
-    } catch {
+    } catch (err) {
+      if (!canFallback(err)) throw err;
       const all = getStoredRegistries();
       const updated = all.map((r) =>
         r.id === registryId ? { ...r, tier: "OBSERVER" as const } : r,

@@ -5,6 +5,7 @@ import { onboardingRouter } from "./routes/onboarding.routes";
 import { registryRouter } from "./routes/registry.routes";
 import { transferRouter } from "./routes/transfer.routes";
 import { governanceRouter } from "./routes/governance.routes";
+import { auditRouter } from "./routes/audit.routes";
 
 export const app = express();
 
@@ -26,3 +27,4 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/registry", registryRouter);
 app.use("/api/transfer", transferRouter);
 app.use("/api/governance", governanceRouter);
+app.use("/api/audit", auditRouter);

@@ -31,8 +31,12 @@ services:
       RPC_URL: http://besu-node-1:8545
       CONTROL_PLANE_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/clear_db?schema=control_plane
       TENANT_DATABASE_URL_BASE: postgresql://postgres:postgres@postgres:5432/clear_db
-      JWT_SECRET: super-secret-jwt-key-change-in-production-min-32-chars
-      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production-min-32-chars}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      DIRECTORY_CONTRACT_ADDRESS: ${DIRECTORY_CONTRACT_ADDRESS:-0x0000000000000000000000000000000000000000}
+      SETTLEMENT_CONTRACT_ADDRESS: ${SETTLEMENT_CONTRACT_ADDRESS:-0x0000000000000000000000000000000000000000}
+      COUNCIL_EMAIL: ${COUNCIL_EMAIL:-council@clear-ledger.org}
+      COUNCIL_PASSWORD: ${COUNCIL_PASSWORD:-council-secret-pass}
       PORT: 3001
     depends_on:
       - postgres

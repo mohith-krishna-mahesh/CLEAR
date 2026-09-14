@@ -28,6 +28,8 @@ function loadDirectoryAbi(): ethers.InterfaceAbi {
     "function signerToRegistry(address signer) external view returns (uint256)",
     "function approveRegistry(uint256 registryId) external",
     "function rejectApplication(uint256 registryId) external",
+    "function promoteToObserver(uint256 registryId) external",
+    "function council() external view returns (address)",
   ];
 }
 
@@ -54,7 +56,7 @@ export class DirectoryClient {
     name: string,
     jurisdiction: string,
     metadataURI: string,
-    signer: ethers.Signer
+    signer: ethers.Signer,
   ): Promise<bigint> {
     const connected = this.contract.connect(signer) as ethers.Contract;
     const tx = await connected.applyAsRegistry(name, jurisdiction, metadataURI);
@@ -62,15 +64,34 @@ export class DirectoryClient {
     return this.signerToRegistry(await signer.getAddress());
   }
 
-  async approveRegistry(registryId: bigint, signer: ethers.Signer): Promise<void> {
+  async approveRegistry(
+    registryId: bigint,
+    signer: ethers.Signer,
+  ): Promise<void> {
     const connected = this.contract.connect(signer) as ethers.Contract;
     const tx = await connected.approveRegistry(registryId);
     await tx.wait();
   }
 
-  async rejectApplication(registryId: bigint, signer: ethers.Signer): Promise<void> {
+  async rejectApplication(
+    registryId: bigint,
+    signer: ethers.Signer,
+  ): Promise<void> {
     const connected = this.contract.connect(signer) as ethers.Contract;
     const tx = await connected.rejectApplication(registryId);
     await tx.wait();
+  }
+
+  async promoteToObserver(
+    registryId: bigint,
+    signer: ethers.Signer,
+  ): Promise<void> {
+    const connected = this.contract.connect(signer) as ethers.Contract;
+    const tx = await connected.promoteToObserver(registryId);
+    await tx.wait();
+  }
+
+  async council(): Promise<string> {
+    return this.contract.council();
   }
 }

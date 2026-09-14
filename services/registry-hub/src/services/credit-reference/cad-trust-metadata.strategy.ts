@@ -1,15 +1,42 @@
+import { ethers } from "ethers";
 import {
   CreditReferenceStrategy,
   CreditRecord,
 } from "./credit-reference-strategy.interface";
+import { env } from "../../config/env";
 
 /**
- * Climate Action Data Trust (CAD Trust) metadata derivation strategy.
- * Resolves credit references against CAD Trust global metadata observatory.
+ * Prefers a CAD Trust observatory metadata hash when CAD_TRUST_API_URL is set.
+ * Falls back to a deterministic CAD-namespaced keccak256 of local credit fields.
  */
 export class CADTrustMetadataStrategy implements CreditReferenceStrategy {
-  async computeReference(_credit: CreditRecord): Promise<string> {
-    // TODO(P3): connect to CAD Trust API to retrieve canonical metadata hash
-    throw new Error("Not implemented — production only");
+  async computeReference(credit: CreditRecord): Promise<string> {
+    const api = (env.CAD_TRUST_API_URL || "").replace(/\/$/, "");
+    if (api) {
+      try {
+        const res = await fetch(
+          `${api}/credits/${encodeURIComponent(credit.id)}`,
+        );
+        if (res.ok) {
+          const meta = await res.json();
+          return ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(meta)));
+        }
+      } catch {
+        // fall through to local CAD-namespaced hash
+      }
+    }
+
+    return ethers.keccak256(
+      ethers.AbiCoder.defaultAbiCoder().encode(
+        ["string", "string", "string", "uint256", "uint256"],
+        [
+          "cad-trust",
+          credit.id,
+          credit.projectName,
+          credit.vintage,
+          Math.floor(credit.amount),
+        ],
+      ),
+    );
   }
 }

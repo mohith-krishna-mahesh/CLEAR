@@ -8,7 +8,9 @@
     "build": "pnpm --filter @clear/shared run build && pnpm --filter @clear/contracts run build && pnpm --filter @clear/registry-hub run build && pnpm --filter @clear/frontend-app run build",
     "test": "pnpm --filter @clear/contracts test && pnpm --filter @clear/registry-hub test",
     "lint": "pnpm --filter @clear/contracts run lint && pnpm --filter @clear/registry-hub run lint && pnpm --filter @clear/frontend-app run lint",
-    "deploy:local": "pnpm --filter @clear/contracts run deploy:local"
+    "deploy:local": "pnpm --filter @clear/contracts run deploy:local",
+    "deploy:council-safe": "pnpm --filter @clear/contracts run deploy:council-safe",
+    "subgraph:inject": "pnpm --filter @clear/subgraph run inject-addresses"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

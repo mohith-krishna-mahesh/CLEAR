@@ -4,12 +4,9 @@ import { Table } from "../../components/Table";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/Button";
 import {
-  graphqlClient,
-  GET_AUDIT_METRICS,
-  SubgraphRegistry,
+  loadRegistries,
+  loadTransfers,
   SubgraphTransfer,
-  getDemoRegistries,
-  getDemoTransfers,
 } from "../../lib/graphql-client";
 
 export const AuditDashboard: React.FC = () => {
@@ -25,28 +22,12 @@ export const AuditDashboard: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await graphqlClient.request<{
-        registries: SubgraphRegistry[];
-        completedTransfers: { id: string; amount: string }[];
-        recentTransfers: SubgraphTransfer[];
-      }>(GET_AUDIT_METRICS);
-
-      setVerifiedCount(data.registries.length);
-      setCompletedCount(data.completedTransfers.length);
-      const volume = data.completedTransfers.reduce(
-        (sum, t) => sum + (parseInt(t.amount, 10) || 0),
-        0,
-      );
-      setTotalVolume(volume);
-      setRecentTransfers(data.recentTransfers);
-      setIsLive(true);
-    } catch (err) {
-      console.warn("Could not reach live Subgraph, using baseline data:", err);
-      setIsLive(false);
-      const demoRegs = getDemoRegistries();
-      const demoTrans = getDemoTransfers();
-      const verified = demoRegs.filter((r) => r.tier === "VERIFIED");
-      const completed = demoTrans.filter((t) => t.status === "COMPLETED");
+      const [{ registries }, { transfers, source }] = await Promise.all([
+        loadRegistries(),
+        loadTransfers(),
+      ]);
+      const verified = registries.filter((r) => r.tier === "VERIFIED");
+      const completed = transfers.filter((t) => t.status === "COMPLETED");
       setVerifiedCount(verified.length);
       setCompletedCount(completed.length);
       const volume = completed.reduce(
@@ -54,7 +35,10 @@ export const AuditDashboard: React.FC = () => {
         0,
       );
       setTotalVolume(volume);
-      setRecentTransfers(demoTrans);
+      setRecentTransfers(transfers.slice(0, 10));
+      setIsLive(source === "subgraph" || source === "api");
+    } catch (err) {
+      console.warn("Could not load audit metrics:", err);
     } finally {
       setLoading(false);
     }
@@ -92,7 +76,7 @@ export const AuditDashboard: React.FC = () => {
                   : "bg-blue-50 text-blue-700 border border-blue-200"
               }`}
             >
-              {isLive ? "● Live Subgraph" : "Demo Mode"}
+              {isLive ? "● Live" : "Demo Mode"}
             </span>
           </div>
           <p className="text-sm text-gray-500 mt-1">

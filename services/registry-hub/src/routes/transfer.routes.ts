@@ -9,5 +9,9 @@ transferRouter.use(authMiddleware);
 
 transferRouter.get("/", (req, res) => controller.listTransfers(req, res));
 transferRouter.post("/initiate", (req, res) => controller.initiate(req, res));
-transferRouter.post("/:transferId/complete", (req, res) => controller.complete(req, res));
-transferRouter.post("/:transferId/cancel", (req, res) => controller.cancel(req, res));
+transferRouter.post("/:transferId/complete", (req, res) =>
+  controller.complete(req, res),
+);
+transferRouter.post("/:transferId/cancel", (req, res) =>
+  controller.cancel(req, res),
+);

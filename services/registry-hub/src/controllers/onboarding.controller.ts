@@ -5,9 +5,11 @@ const onboardingService = new OnboardingService();
 
 export class OnboardingController {
   async apply(req: Request, res: Response): Promise<void> {
-    const { name, jurisdiction, metadataURI } = req.body ?? {};
+    const { name, jurisdiction, metadataURI, email, password } = req.body ?? {};
     if (!name || !jurisdiction || !metadataURI) {
-      res.status(400).json({ error: "name, jurisdiction, and metadataURI are required" });
+      res
+        .status(400)
+        .json({ error: "name, jurisdiction, and metadataURI are required" });
       return;
     }
     try {
@@ -15,10 +17,16 @@ export class OnboardingController {
         name: String(name),
         jurisdiction: String(jurisdiction),
         metadataURI: String(metadataURI),
+        email: email ? String(email) : undefined,
+        password: password ? String(password) : undefined,
       });
       res.status(201).json(result);
     } catch (err) {
-      res.status(500).json({ error: err instanceof Error ? err.message : "Onboarding failed" });
+      res
+        .status(500)
+        .json({
+          error: err instanceof Error ? err.message : "Onboarding failed",
+        });
     }
   }
 
@@ -36,7 +44,11 @@ export class OnboardingController {
       }
       res.status(200).json(status);
     } catch (err) {
-      res.status(500).json({ error: err instanceof Error ? err.message : "Failed to load status" });
+      res
+        .status(500)
+        .json({
+          error: err instanceof Error ? err.message : "Failed to load status",
+        });
     }
   }
 }

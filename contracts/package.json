@@ -10,7 +10,8 @@
     "test:fuzz": "forge test",
     "lint": "prettier --check 'contracts/**/*.sol' 'test/**/*.ts' 'scripts/**/*.ts'",
     "deploy:local": "hardhat run scripts/deploy.ts --network besu-local",
-    "grant-trust:local": "hardhat run scripts/grant-genesis-trust.ts --network besu-local"
+    "grant-trust:local": "hardhat run scripts/grant-genesis-trust.ts --network besu-local",
+    "deploy:council-safe": "hardhat run scripts/deploy-council-safe.ts --network besu-local"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
@@ -21,6 +22,7 @@
     "chai": "^4.4.1",
     "ethers": "^6.12.1",
     "hardhat": "^2.22.4",
+    "prettier-plugin-solidity": "^2.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }

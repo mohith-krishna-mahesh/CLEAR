@@ -4,12 +4,22 @@ import { randomBytes } from "crypto";
 import { controlPlane, ensureControlPlane } from "../db/control-plane/client";
 import { getTenantClient } from "../db/tenant/client-factory";
 import { DirectoryClient } from "../blockchain/directory.client";
-import { getRegistrySigner, getSignerCustody } from "./strategies";
+import { AuthService } from "./auth.service";
+import {
+  fundAddress,
+  getCouncilSigner,
+  getRegistrySigner,
+  getSignerCustody,
+  getVerification,
+} from "./strategies";
+import { env } from "../config/env";
 
 export interface OnboardingParams {
   name: string;
   jurisdiction: string;
   metadataURI: string;
+  email?: string;
+  password?: string;
 }
 
 const TENANT_MIGRATION_SQL = `
@@ -63,12 +73,17 @@ function loadTenantMigrationSql(): string {
       .filter((f) => f.endsWith(".sql"))
       .sort();
     if (files.length === 0) continue;
-    return files.map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+    return files
+      .map((f) => fs.readFileSync(path.join(dir, f), "utf8"))
+      .join("\n");
   }
   return TENANT_MIGRATION_SQL;
 }
 
-async function executeSqlBatch(run: (sql: string) => Promise<unknown>, sqlText: string): Promise<void> {
+async function executeSqlBatch(
+  run: (sql: string) => Promise<unknown>,
+  sqlText: string,
+): Promise<void> {
   for (const statement of sqlText.split(";")) {
     const sql = statement.trim();
     if (sql) {
@@ -80,12 +95,19 @@ async function executeSqlBatch(run: (sql: string) => Promise<unknown>, sqlText: 
 export class OnboardingService {
   constructor(
     private readonly directory = new DirectoryClient(),
-    private readonly custody = getSignerCustody()
+    private readonly custody = getSignerCustody(),
   ) {}
 
-  async onboardRegistry(
-    params: OnboardingParams
-  ): Promise<{ registryId: string; signerAddress: string; onChainId: string }> {
+  async onboardRegistry(params: OnboardingParams): Promise<{
+    registryId: string;
+    signerAddress: string;
+    onChainId: string;
+    name: string;
+    jurisdiction: string;
+    tier: string;
+    createdAt: string;
+    token?: string;
+  }> {
     await ensureControlPlane();
 
     const registryId = newRegistryId();
@@ -93,14 +115,21 @@ export class OnboardingService {
     const schemaName = `registry_${registryId}`;
 
     // 1. Schema must exist before any tenant writes (signer secret, credits, cache).
-    await controlPlane.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+    await controlPlane.$executeRawUnsafe(
+      `CREATE SCHEMA IF NOT EXISTS "${schemaName}"`,
+    );
 
     // 2. Apply tenant migration SQL against the new schema.
     const tenant = getTenantClient(registryId);
-    await executeSqlBatch((sql) => tenant.$executeRawUnsafe(sql), loadTenantMigrationSql());
+    await executeSqlBatch(
+      (sql) => tenant.$executeRawUnsafe(sql),
+      loadTenantMigrationSql(),
+    );
 
     // 3. Provision the registry signer (writes into the tenant schema).
-    const { address: signerAddress } = await this.custody.provisionSigner(registryId);
+    const { address: signerAddress } =
+      await this.custody.provisionSigner(registryId);
+    await fundAddress(signerAddress);
     const signer = await getRegistrySigner(registryId, signerAddress);
 
     // 4. Submit the on-chain application as that signer.
@@ -108,11 +137,11 @@ export class OnboardingService {
       params.name,
       params.jurisdiction,
       params.metadataURI,
-      signer
+      signer,
     );
 
     // 5. Persist the control-plane Registry row last, now that chain + schema exist.
-    await controlPlane.registry.create({
+    const created = await controlPlane.registry.create({
       data: {
         id: registryId,
         onChainId,
@@ -123,12 +152,63 @@ export class OnboardingService {
       },
     });
 
-    return { registryId, signerAddress, onChainId: onChainId.toString() };
+    await tenant.$executeRawUnsafe(
+      `INSERT INTO "Credit" ("id", "projectName", "vintage", "amount", "ownerCompany", "status", "createdAt")
+       VALUES ($1, $2, $3, $4, $5, 'ACTIVE', CURRENT_TIMESTAMP)`,
+      `CR-${registryId.slice(-4)}01`,
+      `${params.name} Starter Mitigation Project`,
+      new Date().getFullYear(),
+      1500,
+      params.name,
+    );
+
+    const decision = await getVerification().review({
+      registryId: onChainId,
+      name: params.name,
+      jurisdiction: params.jurisdiction,
+      metadataURI: params.metadataURI,
+      signerAddress,
+    });
+
+    let tier = created.tier;
+    if (decision.approve && env.AUTO_APPROVE_ON_CHAIN === "true") {
+      await this.directory.approveRegistry(onChainId, getCouncilSigner());
+      await controlPlane.registry.update({
+        where: { id: registryId },
+        data: { tier: "VERIFIED" },
+      });
+      tier = "VERIFIED";
+    }
+
+    let token: string | undefined;
+    if (params.email && params.password) {
+      const auth = new AuthService();
+      const session = await auth.register({
+        email: params.email,
+        password: params.password,
+        registryId,
+        role: "registry",
+      });
+      token = session.token;
+    }
+
+    return {
+      registryId,
+      signerAddress,
+      onChainId: onChainId.toString(),
+      name: created.name,
+      jurisdiction: created.jurisdiction,
+      tier,
+      createdAt: created.createdAt.toISOString(),
+      token,
+    };
   }
 
   async getStatus(registryId: string) {
     await ensureControlPlane();
-    const registry = await controlPlane.registry.findUnique({ where: { id: registryId } });
+    const registry = await controlPlane.registry.findUnique({
+      where: { id: registryId },
+    });
     if (!registry) {
       return null;
     }

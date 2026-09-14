@@ -54,11 +54,11 @@ export const SignupForm: React.FC = () => {
       userId: `user-${result.registryId}`,
       registryId: result.registryId,
       role: "registry",
-      token: `demo-token-${result.registryId}`,
+      token: result.token || `session-${result.registryId}`,
       name: result.name,
       jurisdiction: result.jurisdiction,
       signerAddress: result.signerAddress,
-      tier: (result.tier as any) || "VERIFIED",
+      tier: (result.tier as any) || "PENDING",
     });
     navigate("/registry/dashboard");
   };

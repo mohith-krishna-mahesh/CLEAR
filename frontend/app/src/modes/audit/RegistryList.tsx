@@ -3,10 +3,8 @@ import { Table } from "../../components/Table";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/Button";
 import {
-  graphqlClient,
-  GET_ALL_REGISTRIES,
+  loadRegistries as fetchRegistries,
   SubgraphRegistry,
-  getDemoRegistries,
 } from "../../lib/graphql-client";
 
 export const RegistryList: React.FC = () => {
@@ -15,26 +13,21 @@ export const RegistryList: React.FC = () => {
   const [tierFilter, setTierFilter] = useState<string>("ALL");
   const [search, setSearch] = useState<string>("");
 
-  const loadRegistries = async () => {
+  const refreshRegistries = async () => {
     setLoading(true);
     try {
-      const data = await graphqlClient.request<{
-        registries: SubgraphRegistry[];
-      }>(GET_ALL_REGISTRIES);
-      setRegistries(data.registries);
+      const { registries } = await fetchRegistries();
+      setRegistries(registries);
     } catch (err) {
-      console.warn(
-        "Subgraph unreachable, falling back to default registries:",
-        err,
-      );
-      setRegistries(getDemoRegistries());
+      console.warn("Failed to load registries:", err);
+      setRegistries([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadRegistries();
+    refreshRegistries();
   }, []);
 
   const filteredRegistries = useMemo(() => {
@@ -77,7 +70,7 @@ export const RegistryList: React.FC = () => {
         <Button
           size="sm"
           variant="outline"
-          onClick={loadRegistries}
+          onClick={refreshRegistries}
           disabled={loading}
         >
           {loading ? "Loading..." : "Refresh"}
