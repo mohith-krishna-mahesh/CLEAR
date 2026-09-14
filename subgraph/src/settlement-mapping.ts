@@ -1,22 +1,43 @@
-import { ethereum, BigInt, Bytes } from "@graphprotocol/graph-ts";
+import {
+  TransferInitiated,
+  TransferCompleted,
+  TransferCancelled,
+  TransferExpired,
+} from "../generated/CLEARSettlement/CLEARSettlement";
+import { Transfer } from "../generated/schema";
 
-export class TransferInitiatedEvent extends ethereum.Event {}
-export class TransferCompletedEvent extends ethereum.Event {}
-export class TransferCancelledEvent extends ethereum.Event {}
-export class TransferExpiredEvent extends ethereum.Event {}
-
-export function handleTransferInitiated(event: TransferInitiatedEvent): void {
-  // TODO(P2): upsert Transfer entity with status = "INITIATED", initiatedAt = event.block.timestamp
+export function handleTransferInitiated(event: TransferInitiated): void {
+  let transfer = new Transfer(event.params.transferId.toString());
+  transfer.sourceRegistry = event.params.sourceRegistry;
+  transfer.destRegistry = event.params.destRegistry;
+  transfer.creditReference = event.params.creditReference;
+  transfer.amount = event.params.amount;
+  transfer.status = "INITIATED";
+  transfer.initiatedAt = event.block.timestamp;
+  transfer.save();
 }
 
-export function handleTransferCompleted(event: TransferCompletedEvent): void {
-  // TODO(P2): upsert Transfer entity updating status = "COMPLETED", completedAt = event.block.timestamp
+export function handleTransferCompleted(event: TransferCompleted): void {
+  let transfer = Transfer.load(event.params.transferId.toString());
+  if (transfer != null) {
+    transfer.status = "COMPLETED";
+    transfer.completedAt = event.params.completedAt;
+    transfer.save();
+  }
 }
 
-export function handleTransferCancelled(event: TransferCancelledEvent): void {
-  // TODO(P2): upsert Transfer entity updating status = "CANCELLED"
+export function handleTransferCancelled(event: TransferCancelled): void {
+  let transfer = Transfer.load(event.params.transferId.toString());
+  if (transfer != null) {
+    transfer.status = "CANCELLED";
+    transfer.save();
+  }
 }
 
-export function handleTransferExpired(event: TransferExpiredEvent): void {
-  // TODO(P2): upsert Transfer entity updating status = "EXPIRED"
+export function handleTransferExpired(event: TransferExpired): void {
+  let transfer = Transfer.load(event.params.transferId.toString());
+  if (transfer != null) {
+    transfer.status = "EXPIRED";
+    transfer.save();
+  }
 }
