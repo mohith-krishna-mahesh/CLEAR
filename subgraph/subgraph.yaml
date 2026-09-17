@@ -10,7 +10,7 @@ dataSources:
     name: RegistryDirectory
     network: besu
     source:
-      address: "0x2E1f232a9439C3D459FcEca0BeEf13acc8259Dd8"
+      address: "0xC9Bc439c8723c5c6fdbBE14E5fF3a1224f8A0f7C"
       abi: RegistryDirectory
       startBlock: 0
     mapping:
@@ -41,7 +41,7 @@ dataSources:
     name: CLEARSettlement
     network: besu
     source:
-      address: "0x05d91B9031A655d08E654177336d08543ac4B711"
+      address: "0xDE87AF9156a223404885002669D3bE239313Ae33"
       abi: CLEARSettlement
       startBlock: 0
     mapping:

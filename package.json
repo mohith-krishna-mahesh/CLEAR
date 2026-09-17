@@ -16,6 +16,7 @@
     "deploy:local": "pnpm --filter @clear/contracts run deploy:local",
     "contracts:deploy": "pnpm --filter @clear/contracts run deploy:local",
     "contracts:grant-trust": "pnpm --filter @clear/contracts run grant-trust:local",
+    "seed:demo": "pnpm --filter @clear/registry-hub run seed:demo",
     "deploy:council-safe": "pnpm --filter @clear/contracts run deploy:council-safe",
     "env:sync": "node scripts/sync-demo-env.mjs",
     "subgraph:inject": "pnpm --filter @clear/subgraph run inject-addresses",

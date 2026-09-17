@@ -81,7 +81,7 @@ Use these accounts in the local frontend demo:
 | Registry Beta | `http://localhost:3000/registry/login` | `2` | `admin@registry-beta.org` | `password123` |
 | Registry Gamma | `http://localhost:3000/registry/login` | `3` | `admin@registry-gamma.org` | `password123` |
 
-The council credentials are backed by the `COUNCIL_EMAIL` and `COUNCIL_PASSWORD` values in `.env`. The registry accounts are seeded frontend demo accounts; registries created through onboarding can also sign in with the email/password submitted in the application form.
+The council credentials are backed by the `COUNCIL_EMAIL` and `COUNCIL_PASSWORD` values in `.env`. Registry Alpha and Registry Beta are seeded into the backend by `pnpm run seed:demo` and are the live transfer demo accounts. Registry Gamma is available in frontend fallback/demo mode for pending-registry UI flows. Registries created through onboarding can also sign in with the email/password submitted in the application form.
 
 For a non-destructive re-run that keeps existing Docker volumes and chain data:
 

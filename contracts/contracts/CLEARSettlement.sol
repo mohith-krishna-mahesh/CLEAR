@@ -4,12 +4,8 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IRegistryDirectory.sol";
 
-/// @title CLEARSettlement
-/// @notice Minimal settlement-only protocol for verifiable cross-border
-///         carbon registry transfers. Records ONLY settlement metadata —
-///         never the underlying carbon credit itself. Registries remain
-///         the sole system of record for credit ownership. All authorization
-///         is delegated to RegistryDirectory.
+// @title CLEARSettlement
+// @notice Minimal settlement-only protocol for verifiable cross-border carbon registry transfers. Records ONLY settlement metadata — never the underlying carbon credit itself. Registries remain the sole system of record for credit ownership. All authorization is delegated to RegistryDirectory.
 contract CLEARSettlement is Ownable {
     enum TransferStatus {
         INITIATED,

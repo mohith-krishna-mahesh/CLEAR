@@ -177,7 +177,7 @@ export const Login: React.FC = () => {
                 "2",
                 "Registry Beta (Kenya)",
                 "Kenya",
-                "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+                "0x12b3886d85Ec62049AB918FC447364304047B9bD",
               )
             }
           >

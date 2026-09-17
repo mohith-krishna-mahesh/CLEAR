@@ -38,7 +38,7 @@ export const IncomingTransfers: React.FC = () => {
             t.status === "INITIATED" &&
             (t.destRegistry.toLowerCase() === destSigner.toLowerCase() ||
               destSigner.toLowerCase() ===
-                "0xf17f52151ebef6c7334fad080c5704d77216b732"),
+                "0x12b3886d85ec62049ab918fc447364304047b9bd"),
         );
         setTransfers(incoming);
       }

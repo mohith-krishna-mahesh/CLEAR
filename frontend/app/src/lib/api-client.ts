@@ -123,7 +123,7 @@ export const SEED_REGISTRIES: StoredRegistry[] = [
     jurisdiction: "Kenya",
     email: "admin@registry-beta.org",
     password: "password123",
-    signerAddress: "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+    signerAddress: "0x12b3886d85Ec62049AB918FC447364304047B9bD",
     tier: "VERIFIED",
     metadataURI: "ipfs://bafybeiclarobeta2026",
     createdAt: new Date(1726100000 * 1000).toISOString(),
@@ -228,7 +228,7 @@ export function getStoredTransfers(): StoredTransfer[] {
         {
           id: "1",
           sourceRegistry: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
-          destRegistry: "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+          destRegistry: "0x12b3886d85Ec62049AB918FC447364304047B9bD",
           creditReference:
             "0x43522d3130312d4b6572616c6157696e64323032340000000000000000000000",
           amount: "5000",

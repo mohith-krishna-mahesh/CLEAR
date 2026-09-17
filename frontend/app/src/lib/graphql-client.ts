@@ -196,7 +196,7 @@ export const DEFAULT_DEMO_REGISTRIES: SubgraphRegistry[] = [
   },
   {
     id: "2",
-    signer: "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+    signer: "0x12b3886d85Ec62049AB918FC447364304047B9bD",
     name: "Registry Beta (Kenya Sovereign Ledger)",
     jurisdiction: "Kenya",
     metadataURI: "ipfs://bafybeiclarobeta2026",
@@ -220,7 +220,7 @@ export const DEFAULT_DEMO_TRANSFERS: SubgraphTransfer[] = [
   {
     id: "1",
     sourceRegistry: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
-    destRegistry: "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+    destRegistry: "0x12b3886d85Ec62049AB918FC447364304047B9bD",
     creditReference:
       "0x43522d3130312d4b6572616c6157696e64323032340000000000000000000000",
     amount: "5000",
@@ -230,7 +230,7 @@ export const DEFAULT_DEMO_TRANSFERS: SubgraphTransfer[] = [
   },
   {
     id: "2",
-    sourceRegistry: "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
+    sourceRegistry: "0x12b3886d85Ec62049AB918FC447364304047B9bD",
     destRegistry: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
     creditReference:
       "0x4b452d3530322d416672696361536f6c61723234000000000000000000000000",

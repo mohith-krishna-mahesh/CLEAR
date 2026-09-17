@@ -3,10 +3,8 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title RegistryDirectory
-/// @notice On-chain registry of participating carbon registries and their
-///         trust tier. CLEARSettlement delegates all authorization checks
-///         here. Council (a Gnosis Safe multisig) governs admission.
+// @title RegistryDirectory
+// @notice On-chain registry of participating carbon registries and their trust tier. CLEARSettlement delegates all authorization checks here. Council (a Gnosis Safe multisig) governs admission.
 contract RegistryDirectory is Ownable {
     enum TrustTier {
         NONE,

@@ -74,6 +74,9 @@ set +a
 echo "[demo:prepare] Granting genesis registry trust fixtures..."
 pnpm run contracts:grant-trust
 
+echo "[demo:prepare] Seeding backend demo registry accounts..."
+pnpm run seed:demo
+
 echo "[demo:prepare] Preparing and deploying subgraph..."
 pnpm run subgraph:inject
 pnpm run subgraph:codegen

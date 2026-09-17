@@ -10,7 +10,8 @@
     "dev": "tsx watch src/server.ts",
     "test": "prisma generate --schema=src/db/control-plane/schema.prisma && vitest run",
     "lint": "prettier --check 'src/**/*.ts' 'test/**/*.ts'",
-    "prisma:generate": "prisma generate --schema=src/db/control-plane/schema.prisma"
+    "prisma:generate": "prisma generate --schema=src/db/control-plane/schema.prisma",
+    "seed:demo": "tsx src/scripts/seed-demo.ts"
   },
   "dependencies": {
     "@clear/shared": "workspace:*",
