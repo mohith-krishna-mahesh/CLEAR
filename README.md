@@ -40,7 +40,7 @@ CLEAR provides an immutable, decentralized settlement fabric enabling sovereign 
 |  |   - Trust Delegation Authority      |  |   - Expiry & Finality Logic    |  |
 |  +-------------------------------------+  +--------------------------------+  |
 |                                                                               |
-|  [Blockscout Explorer: Port 4000]                                              |
+|  [CLEAR Local Explorer: Port 4000, Blockscout API: Port 4001]                  |
 +-------------------------------------------------------------------------------+
 ```
 
@@ -61,14 +61,15 @@ For a clean end-to-end demo from the repository root, run:
 pnpm run demo:fresh
 ```
 
-This command resets Docker volumes and Besu validator data, installs dependencies, generates Prisma client code, builds every package, starts Postgres/Besu/Blockscout/IPFS/Graph Node, deploys the contracts, syncs `.env` files with the deployed addresses, grants fixture registry trust, deploys the subgraph, and finally runs the backend and frontend together.
+This command resets Docker volumes and Besu validator data, installs dependencies, generates Prisma client code, builds every package, starts Postgres/Besu/Blockscout/IPFS/Graph Node, deploys the contracts, syncs `.env` files with the deployed addresses, grants fixture registry trust, deploys the subgraph, and finally runs the backend, frontend, and local explorer together.
 
 When it is running, open:
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:3001/health`
 - Subgraph: `http://localhost:8000/subgraphs/name/clear/subgraph`
-- Blockscout: `http://localhost:4000`
+- Local explorer: `http://localhost:4000`
+- Blockscout API: `http://localhost:4001/api`
 
 ### Demo login credentials
 
@@ -109,7 +110,7 @@ cp .env.example .env
 ```
 
 ### 3. Spin Up Infrastructure
-Start the private Besu 3-validator IBFT2 network, Blockscout explorer, and dev services:
+Start the private Besu 3-validator IBFT2 network, Blockscout API backend, local explorer, and dev services:
 ```bash
 docker compose up -d
 ```

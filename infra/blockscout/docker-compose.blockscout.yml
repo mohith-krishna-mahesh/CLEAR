@@ -28,7 +28,7 @@ services:
       - bin/blockscout eval "Elixir.Explorer.ReleaseTasks.create_and_migrate()" && bin/blockscout start
 
     ports:
-      - "4000:4000"
+      - "4001:4000"
 
     environment:
       ETHEREUM_JSONRPC_VARIANT: "besu"

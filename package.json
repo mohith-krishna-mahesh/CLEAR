@@ -23,6 +23,7 @@
     "subgraph:codegen": "pnpm --filter @clear/subgraph run codegen",
     "subgraph:build": "pnpm --filter @clear/subgraph run build",
     "subgraph:deploy": "pnpm --filter @clear/subgraph run create-local || true && pnpm --filter @clear/subgraph run deploy-local",
+    "explorer:dev": "node scripts/local-explorer.mjs",
     "app:dev": "bash scripts/demo-dev.sh",
     "dev": "pnpm run app:dev",
     "demo:fresh": "pnpm run infra:reset && pnpm run demo:prepare && pnpm run app:dev",

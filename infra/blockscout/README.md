@@ -1,6 +1,6 @@
-# Blockscout Explorer for CLEAR
+# CLEAR Local Explorer and Blockscout API
 
-Blockscout provides open-source EVM block exploration for the CLEAR Besu network.
+Blockscout provides the EVM indexing API for the CLEAR Besu network. The demo serves a lightweight local explorer UI on port `4000` and keeps the Blockscout backend API available on port `4001`.
 
 ## Standalone Quickstart
 
@@ -10,7 +10,7 @@ To run Blockscout and its dedicated PostgreSQL database:
 docker compose -f infra/blockscout/docker-compose.blockscout.yml up -d
 ```
 
-Once running, navigate to `http://localhost:4000` to view blocks, transactions, contract deployments, and token/credit settlement events in real time.
+Once the demo app is running, navigate to `http://localhost:4000` to view local blocks and transactions in real time. The Blockscout API backend is available at `http://localhost:4001/api`.
 
 To stop and remove containers:
 ```bash

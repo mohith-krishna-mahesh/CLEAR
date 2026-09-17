@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CLEAR Local Explorer</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --panel: #ffffff;
+        --ink: #172033;
+        --muted: #647084;
+        --line: #dbe1ea;
+        --accent: #0f766e;
+        --accent-soft: #d9f3ef;
+        --warn: #9a3412;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      h2 {
+        font-size: 16px;
+      }
+
+      p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      button,
+      a.button {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: white;
+        border-radius: 6px;
+        padding: 10px 14px;
+        font: inherit;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      a.button.secondary {
+        background: white;
+        color: var(--accent);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .metric {
+        min-height: 92px;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 8px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      code {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .span-4 {
+        grid-column: span 4;
+      }
+
+      .span-2 {
+        grid-column: span 2;
+      }
+
+      .empty,
+      .error {
+        padding: 18px 8px;
+        color: var(--muted);
+      }
+
+      .error {
+        color: var(--warn);
+      }
+
+      @media (max-width: 860px) {
+        header {
+          display: block;
+        }
+
+        .actions {
+          justify-content: flex-start;
+          margin-top: 16px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .span-2,
+        .span-4 {
+          grid-column: span 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>CLEAR Local Explorer</h1>
+          <p>
+            Live view of the local Besu chain used by the CLEAR demo. Blockscout
+            API is still available under <code>/api</code>.
+          </p>
+        </div>
+        <div class="actions">
+          <a class="button secondary" href="/api">Blockscout API</a>
+          <button id="refresh" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="panel metric">
+          <div class="label">Network</div>
+          <div class="value">CLEAR Besu Local</div>
+        </div>
+        <div class="panel metric">
+          <div class="label">Chain ID</div>
+          <div id="chain-id" class="value">...</div>
+        </div>
+        <div class="panel metric">
+          <div class="label">Latest Block</div>
+          <div id="latest-block" class="value">...</div>
+        </div>
+        <div class="panel metric">
+          <div class="label">RPC Status</div>
+          <div class="value"><span id="status" class="status"><span class="dot"></span> Checking</span></div>
+        </div>
+
+        <div class="panel span-4">
+          <h2>Recent Blocks</h2>
+          <div id="blocks"></div>
+        </div>
+
+        <div class="panel span-4">
+          <h2>Recent Transactions</h2>
+          <div id="transactions"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const rpc = async (method, params = []) => {
+        const response = await fetch("/rpc", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+        });
+        const payload = await response.json();
+        if (payload.error) throw new Error(payload.error.message || "RPC error");
+        return payload.result;
+      };
+
+      const decimal = (hex) => (hex ? Number.parseInt(hex, 16) : 0);
+      const short = (value) =>
+        value && value.length > 18 ? `${value.slice(0, 10)}...${value.slice(-8)}` : value || "-";
+
+      const renderBlocks = (blocks) => {
+        if (!blocks.length) {
+          document.getElementById("blocks").innerHTML = '<div class="empty">No blocks returned yet.</div>';
+          return;
+        }
+
+        document.getElementById("blocks").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 90px;">Block</th>
+                <th>Hash</th>
+                <th style="width: 90px;">Txs</th>
+                <th style="width: 140px;">Gas Used</th>
+                <th style="width: 180px;">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${blocks
+                .map(
+                  (block) => `
+                    <tr>
+                      <td>${decimal(block.number)}</td>
+                      <td><code title="${block.hash}">${short(block.hash)}</code></td>
+                      <td>${block.transactions.length}</td>
+                      <td>${decimal(block.gasUsed).toLocaleString()}</td>
+                      <td>${new Date(decimal(block.timestamp) * 1000).toLocaleString()}</td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      };
+
+      const renderTransactions = (blocks) => {
+        const txs = blocks.flatMap((block) =>
+          block.transactions.map((tx) => ({
+            ...tx,
+            blockNumber: decimal(block.number),
+          })),
+        );
+
+        if (!txs.length) {
+          document.getElementById("transactions").innerHTML =
+            '<div class="empty">No recent transactions in the last fetched blocks.</div>';
+          return;
+        }
+
+        document.getElementById("transactions").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Hash</th>
+                <th>From</th>
+                <th>To</th>
+                <th style="width: 90px;">Block</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txs
+                .slice(0, 20)
+                .map(
+                  (tx) => `
+                    <tr>
+                      <td><code title="${tx.hash}">${short(tx.hash)}</code></td>
+                      <td><code title="${tx.from}">${short(tx.from)}</code></td>
+                      <td><code title="${tx.to || ""}">${short(tx.to || "contract creation")}</code></td>
+                      <td>${tx.blockNumber}</td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      };
+
+      const setStatus = (ok, text) => {
+        const node = document.getElementById("status");
+        node.style.background = ok ? "var(--accent-soft)" : "#ffedd5";
+        node.style.color = ok ? "var(--accent)" : "var(--warn)";
+        node.innerHTML = `<span class="dot"></span>${text}`;
+      };
+
+      const load = async () => {
+        try {
+          setStatus(true, "Checking");
+          const [chainIdHex, latestHex] = await Promise.all([
+            rpc("eth_chainId"),
+            rpc("eth_blockNumber"),
+          ]);
+          const latest = decimal(latestHex);
+          document.getElementById("chain-id").textContent = decimal(chainIdHex);
+          document.getElementById("latest-block").textContent = latest.toLocaleString();
+
+          const blockNumbers = Array.from({ length: Math.min(10, latest + 1) }, (_, index) =>
+            `0x${(latest - index).toString(16)}`,
+          );
+          const blocks = await Promise.all(
+            blockNumbers.map((number) => rpc("eth_getBlockByNumber", [number, true])),
+          );
+
+          renderBlocks(blocks.filter(Boolean));
+          renderTransactions(blocks.filter(Boolean));
+          setStatus(true, "Connected");
+        } catch (error) {
+          setStatus(false, "Unavailable");
+          document.getElementById("blocks").innerHTML =
+            `<div class="error">${error instanceof Error ? error.message : "Unable to load chain data"}</div>`;
+          document.getElementById("transactions").innerHTML =
+            '<div class="empty">Transactions will appear after the RPC connection is restored.</div>';
+        }
+      };
+
+      document.getElementById("refresh").addEventListener("click", load);
+      load();
+      window.setInterval(load, 10000);
+    </script>
+  </body>
+</html>
