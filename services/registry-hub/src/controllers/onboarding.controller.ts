@@ -22,11 +22,9 @@ export class OnboardingController {
       });
       res.status(201).json(result);
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Onboarding failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Onboarding failed",
+      });
     }
   }
 
@@ -44,11 +42,9 @@ export class OnboardingController {
       }
       res.status(200).json(status);
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Failed to load status",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Failed to load status",
+      });
     }
   }
 }

@@ -14,5 +14,5 @@ p2p-port = 30303
 discovery-enabled = true
 
 miner-enabled = true
-miner-coinbase = "0x9e246e090df4b4b0e504c4078e47f202ebdc3f52"
+miner-coinbase = "0xFE3B557E8Fb62b89F4916B721be55cEb828dBd73"
 logging = "INFO"

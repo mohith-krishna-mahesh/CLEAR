@@ -53,9 +53,54 @@ CLEAR provides an immutable, decentralized settlement fabric enabling sovereign 
 - `pnpm` v9+
 - Docker & Docker Compose v2.20+ (required for `include:` support in `docker-compose.yml`)
 
+### One-command local demo
+
+For a clean end-to-end demo from the repository root, run:
+
+```bash
+pnpm run demo:fresh
+```
+
+This command resets Docker volumes and Besu validator data, installs dependencies, generates Prisma client code, builds every package, starts Postgres/Besu/Blockscout/IPFS/Graph Node, deploys the contracts, syncs `.env` files with the deployed addresses, grants fixture registry trust, deploys the subgraph, and finally runs the backend and frontend together.
+
+When it is running, open:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:3001/health`
+- Subgraph: `http://localhost:8000/subgraphs/name/clear/subgraph`
+- Blockscout: `http://localhost:4000`
+
+### Demo login credentials
+
+Use these accounts in the local frontend demo:
+
+| Role | URL | Registry ID | Email | Password |
+| --- | --- | --- | --- | --- |
+| Council | `http://localhost:3000/governance/pending` | n/a | `council@clear-ledger.org` | `council-secret-pass` |
+| Registry Alpha | `http://localhost:3000/registry/login` | `1` | `admin@registry-alpha.org` | `password123` |
+| Registry Beta | `http://localhost:3000/registry/login` | `2` | `admin@registry-beta.org` | `password123` |
+| Registry Gamma | `http://localhost:3000/registry/login` | `3` | `admin@registry-gamma.org` | `password123` |
+
+The council credentials are backed by the `COUNCIL_EMAIL` and `COUNCIL_PASSWORD` values in `.env`. The registry accounts are seeded frontend demo accounts; registries created through onboarding can also sign in with the email/password submitted in the application form.
+
+For a non-destructive re-run that keeps existing Docker volumes and chain data:
+
+```bash
+pnpm run demo
+```
+
+To prepare infrastructure and deployment artifacts without starting the dev servers:
+
+```bash
+pnpm run demo:prepare
+pnpm run app:dev
+```
+
+### Manual steps
+
 ### 1. Install Dependencies
 ```bash
-pnpm install
+pnpm run bootstrap
 ```
 
 ### 2. Configure Environment
@@ -74,10 +119,17 @@ docker compose up -d
 ### 4. Deploy Smart Contracts to Besu
 Deploy `RegistryDirectory` and `CLEARSettlement` onto the local Besu network:
 ```bash
-pnpm --filter contracts run deploy:local
+pnpm run contracts:deploy
+pnpm run env:sync
 ```
 
 Deployments, addresses, and ABIs will be written to `contracts/deployments/besu-local.json` and mirrored to `shared/abi/`.
+
+### 5. Run Services
+
+```bash
+pnpm run app:dev
+```
 
 ---
 

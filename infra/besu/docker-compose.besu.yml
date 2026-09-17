@@ -13,7 +13,8 @@ services:
     command:
       - --config-file=/opt/besu/config.toml
     networks:
-      - clear-network
+      clear-network:
+        ipv4_address: 172.28.0.11
 
   besu-node-2:
     image: hyperledger/besu:24.1.0
@@ -28,7 +29,8 @@ services:
     depends_on:
       - besu-node-1
     networks:
-      - clear-network
+      clear-network:
+        ipv4_address: 172.28.0.12
 
   besu-node-3:
     image: hyperledger/besu:24.1.0
@@ -43,7 +45,8 @@ services:
     depends_on:
       - besu-node-1
     networks:
-      - clear-network
+      clear-network:
+        ipv4_address: 172.28.0.13
 
 volumes:
   besu-data-1:

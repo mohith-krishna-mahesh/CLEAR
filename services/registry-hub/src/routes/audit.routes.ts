@@ -6,12 +6,22 @@ import { SettlementClient } from "../blockchain/settlement.client";
 export const auditRouter = Router();
 const settlement = new SettlementClient();
 
+interface RegistryAuditRow {
+  id: string;
+  onChainId: bigint;
+  name: string;
+  jurisdiction: string;
+  signerAddress: string;
+  tier: string;
+  createdAt: Date;
+}
+
 auditRouter.get("/registries", async (_req, res) => {
   try {
     await ensureControlPlane();
-    const registries = await controlPlane.registry.findMany({
+    const registries = (await controlPlane.registry.findMany({
       orderBy: { createdAt: "desc" },
-    });
+    })) as RegistryAuditRow[];
     res.status(200).json({
       registries: registries.map((r) => ({
         id: r.onChainId.toString(),
@@ -28,11 +38,9 @@ auditRouter.get("/registries", async (_req, res) => {
       })),
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        error: err instanceof Error ? err.message : "Failed to list registries",
-      });
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Failed to list registries",
+    });
   }
 });
 
@@ -96,10 +104,8 @@ auditRouter.get("/transfers", async (_req, res) => {
 
     res.status(200).json({ transfers });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        error: err instanceof Error ? err.message : "Failed to list transfers",
-      });
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Failed to list transfers",
+    });
   }
 });

@@ -8,9 +8,9 @@ dataSources:
   # Below are default placeholder addresses for pre-deployment scaffolding.
   - kind: ethereum/contract
     name: RegistryDirectory
-    network: mainnet # graph-node maps network name to Besu endpoint
+    network: besu
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x2E1f232a9439C3D459FcEca0BeEf13acc8259Dd8"
       abi: RegistryDirectory
       startBlock: 0
     mapping:
@@ -39,9 +39,9 @@ dataSources:
 
   - kind: ethereum/contract
     name: CLEARSettlement
-    network: mainnet
+    network: besu
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x05d91B9031A655d08E654177336d08543ac4B711"
       abi: CLEARSettlement
       startBlock: 0
     mapping:

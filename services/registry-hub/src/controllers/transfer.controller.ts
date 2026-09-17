@@ -22,11 +22,9 @@ export class TransferController {
 
     const { destRegistryAddress, creditId, amount } = req.body ?? {};
     if (!destRegistryAddress || !creditId || amount === undefined) {
-      res
-        .status(400)
-        .json({
-          error: "destRegistryAddress, creditId, and amount are required",
-        });
+      res.status(400).json({
+        error: "destRegistryAddress, creditId, and amount are required",
+      });
       return;
     }
     try {
@@ -37,12 +35,9 @@ export class TransferController {
       });
       res.status(201).json(result);
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error:
-            err instanceof Error ? err.message : "Transfer initiate failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Transfer initiate failed",
+      });
     }
   }
 
@@ -58,12 +53,9 @@ export class TransferController {
       await transferService.complete(registryId, transferId);
       res.status(200).json({ ok: true, transferId });
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error:
-            err instanceof Error ? err.message : "Transfer complete failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Transfer complete failed",
+      });
     }
   }
 
@@ -79,11 +71,9 @@ export class TransferController {
       await transferService.cancel(registryId, transferId);
       res.status(200).json({ ok: true, transferId });
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Transfer cancel failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Transfer cancel failed",
+      });
     }
   }
 
@@ -94,12 +84,9 @@ export class TransferController {
       const transfers = await transferService.listTransfers(registryId);
       res.status(200).json({ transfers });
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error:
-            err instanceof Error ? err.message : "Failed to list transfers",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Failed to list transfers",
+      });
     }
   }
 }

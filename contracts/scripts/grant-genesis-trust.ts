@@ -51,7 +51,7 @@ async function main() {
       jurisdiction: "Country-Beta",
       metadataURI: "ipfs://QmBetaMetadataFixture",
       privateKey:
-        "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
+        "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b175264574d368dd989fef",
     },
   ];
 

@@ -19,11 +19,9 @@ registryRouter.get("/credits", async (req: AuthenticatedRequest, res) => {
     );
     res.status(200).json({ credits });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        error: err instanceof Error ? err.message : "Failed to load credits",
-      });
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Failed to load credits",
+    });
   }
 });
 
@@ -41,11 +39,9 @@ registryRouter.post(
       amount === undefined ||
       !ownerCompany
     ) {
-      res
-        .status(400)
-        .json({
-          error: "projectName, vintage, amount, and ownerCompany are required",
-        });
+      res.status(400).json({
+        error: "projectName, vintage, amount, and ownerCompany are required",
+      });
       return;
     }
     try {
@@ -70,11 +66,9 @@ registryRouter.post(
       );
       res.status(201).json(credit);
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Failed to issue credit",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Failed to issue credit",
+      });
     }
   },
 );
@@ -100,10 +94,8 @@ registryRouter.get("/profile", async (req: AuthenticatedRequest, res) => {
       },
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        error: err instanceof Error ? err.message : "Failed to load profile",
-      });
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Failed to load profile",
+    });
   }
 });

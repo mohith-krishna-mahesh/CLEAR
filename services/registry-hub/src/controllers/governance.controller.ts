@@ -41,14 +41,12 @@ export class GovernanceController {
       });
       res.status(200).json({ registries: pending.map(serializeRegistry) });
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error:
-            err instanceof Error
-              ? err.message
-              : "Failed to list pending registries",
-        });
+      res.status(500).json({
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to list pending registries",
+      });
     }
   }
 
@@ -77,11 +75,9 @@ export class GovernanceController {
       });
       res.status(200).json(serializeRegistry(updated));
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Approval failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Approval failed",
+      });
     }
   }
 
@@ -110,11 +106,9 @@ export class GovernanceController {
       });
       res.status(200).json(serializeRegistry(updated));
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          error: err instanceof Error ? err.message : "Rejection failed",
-        });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Rejection failed",
+      });
     }
   }
 

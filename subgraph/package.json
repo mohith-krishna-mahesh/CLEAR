@@ -9,7 +9,7 @@
     "build": "graph build",
     "create-local": "graph create --node http://localhost:8020/ clear/subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ clear/subgraph",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 clear/subgraph"
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 clear/subgraph --version-label local"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.68.0",

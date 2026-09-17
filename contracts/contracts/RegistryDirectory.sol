@@ -8,7 +8,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 ///         trust tier. CLEARSettlement delegates all authorization checks
 ///         here. Council (a Gnosis Safe multisig) governs admission.
 contract RegistryDirectory is Ownable {
-    enum TrustTier { NONE, PENDING, OBSERVER, VERIFIED, REVOKED }
+    enum TrustTier {
+        NONE,
+        PENDING,
+        OBSERVER,
+        VERIFIED,
+        REVOKED
+    }
 
     struct RegistryInfo {
         uint256 registryId;
@@ -26,19 +32,35 @@ contract RegistryDirectory is Ownable {
     address public council;
     uint256 private _nextRegistryId = 1;
 
-    event RegistryApplied(uint256 indexed registryId, address indexed signer, string name, string jurisdiction);
+    event RegistryApplied(
+        uint256 indexed registryId,
+        address indexed signer,
+        string name,
+        string jurisdiction
+    );
     event RegistryObserved(uint256 indexed registryId);
     event RegistryApproved(uint256 indexed registryId);
     event RegistryRejected(uint256 indexed registryId);
     event RegistryRevoked(uint256 indexed registryId);
-    event SignerRotated(uint256 indexed registryId, address indexed oldSigner, address indexed newSigner);
-    event CouncilTransferred(address indexed oldCouncil, address indexed newCouncil);
+    event SignerRotated(
+        uint256 indexed registryId,
+        address indexed oldSigner,
+        address indexed newSigner
+    );
+    event CouncilTransferred(
+        address indexed oldCouncil,
+        address indexed newCouncil
+    );
     event MetadataUpdated(uint256 indexed registryId, string metadataURI);
 
     error NotCouncil(address caller);
     error RegistryNotFound(uint256 registryId);
     error SignerAlreadyRegistered(address signer);
-    error InvalidTierTransition(uint256 registryId, TrustTier from, TrustTier to);
+    error InvalidTierTransition(
+        uint256 registryId,
+        TrustTier from,
+        TrustTier to
+    );
     error NotRegistrySigner(uint256 registryId, address caller);
     error ZeroAddress();
 
@@ -47,7 +69,10 @@ contract RegistryDirectory is Ownable {
         _;
     }
 
-    constructor(address initialOwner, address initialCouncil) Ownable(initialOwner) {
+    constructor(
+        address initialOwner,
+        address initialCouncil
+    ) Ownable(initialOwner) {
         if (initialCouncil == address(0)) revert ZeroAddress();
         council = initialCouncil;
     }
@@ -57,7 +82,8 @@ contract RegistryDirectory is Ownable {
         string calldata jurisdiction,
         string calldata metadataURI
     ) external returns (uint256 registryId) {
-        if (signerToRegistry[msg.sender] != 0) revert SignerAlreadyRegistered(msg.sender);
+        if (signerToRegistry[msg.sender] != 0)
+            revert SignerAlreadyRegistered(msg.sender);
 
         registryId = _nextRegistryId++;
         registries[registryId] = RegistryInfo({
@@ -75,10 +101,14 @@ contract RegistryDirectory is Ownable {
         emit RegistryApplied(registryId, msg.sender, name, jurisdiction);
     }
 
-    function updateMetadata(uint256 registryId, string calldata metadataURI) external {
+    function updateMetadata(
+        uint256 registryId,
+        string calldata metadataURI
+    ) external {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
-        if (r.signer != msg.sender) revert NotRegistrySigner(registryId, msg.sender);
+        if (r.signer != msg.sender)
+            revert NotRegistrySigner(registryId, msg.sender);
         r.metadataURI = metadataURI;
         emit MetadataUpdated(registryId, metadataURI);
     }
@@ -86,14 +116,20 @@ contract RegistryDirectory is Ownable {
     function rotateSigner(uint256 registryId, address newSigner) external {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
-        if (r.signer != msg.sender) revert NotRegistrySigner(registryId, msg.sender);
+        if (r.signer != msg.sender)
+            revert NotRegistrySigner(registryId, msg.sender);
         _rotateSigner(r, newSigner);
     }
 
     function promoteToObserver(uint256 registryId) external onlyCouncil {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
-        if (r.tier != TrustTier.PENDING) revert InvalidTierTransition(registryId, r.tier, TrustTier.OBSERVER);
+        if (r.tier != TrustTier.PENDING)
+            revert InvalidTierTransition(
+                registryId,
+                r.tier,
+                TrustTier.OBSERVER
+            );
         r.tier = TrustTier.OBSERVER;
         emit RegistryObserved(registryId);
     }
@@ -102,7 +138,11 @@ contract RegistryDirectory is Ownable {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
         if (r.tier != TrustTier.PENDING && r.tier != TrustTier.OBSERVER) {
-            revert InvalidTierTransition(registryId, r.tier, TrustTier.VERIFIED);
+            revert InvalidTierTransition(
+                registryId,
+                r.tier,
+                TrustTier.VERIFIED
+            );
         }
         r.tier = TrustTier.VERIFIED;
         r.decidedAt = block.timestamp;
@@ -123,13 +163,17 @@ contract RegistryDirectory is Ownable {
     function revokeRegistry(uint256 registryId) external onlyCouncil {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
-        if (r.tier != TrustTier.VERIFIED) revert InvalidTierTransition(registryId, r.tier, TrustTier.REVOKED);
+        if (r.tier != TrustTier.VERIFIED)
+            revert InvalidTierTransition(registryId, r.tier, TrustTier.REVOKED);
         r.tier = TrustTier.REVOKED;
         r.decidedAt = block.timestamp;
         emit RegistryRevoked(registryId);
     }
 
-    function forceRotateSigner(uint256 registryId, address newSigner) external onlyCouncil {
+    function forceRotateSigner(
+        uint256 registryId,
+        address newSigner
+    ) external onlyCouncil {
         RegistryInfo storage r = registries[registryId];
         if (r.registryId == 0) revert RegistryNotFound(registryId);
         _rotateSigner(r, newSigner);
@@ -143,7 +187,8 @@ contract RegistryDirectory is Ownable {
 
     function _rotateSigner(RegistryInfo storage r, address newSigner) internal {
         if (newSigner == address(0)) revert ZeroAddress();
-        if (signerToRegistry[newSigner] != 0) revert SignerAlreadyRegistered(newSigner);
+        if (signerToRegistry[newSigner] != 0)
+            revert SignerAlreadyRegistered(newSigner);
         address old = r.signer;
         delete signerToRegistry[old];
         r.signer = newSigner;
@@ -156,12 +201,17 @@ contract RegistryDirectory is Ownable {
         return id != 0 && registries[id].tier == TrustTier.VERIFIED;
     }
 
-    function getRegistry(uint256 registryId) external view returns (RegistryInfo memory) {
-        if (registries[registryId].registryId == 0) revert RegistryNotFound(registryId);
+    function getRegistry(
+        uint256 registryId
+    ) external view returns (RegistryInfo memory) {
+        if (registries[registryId].registryId == 0)
+            revert RegistryNotFound(registryId);
         return registries[registryId];
     }
 
-    function getRegistryBySigner(address signer) external view returns (RegistryInfo memory) {
+    function getRegistryBySigner(
+        address signer
+    ) external view returns (RegistryInfo memory) {
         uint256 id = signerToRegistry[signer];
         if (id == 0) revert RegistryNotFound(0);
         return registries[id];

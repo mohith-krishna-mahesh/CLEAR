@@ -11,7 +11,12 @@ import "./interfaces/IRegistryDirectory.sol";
 ///         the sole system of record for credit ownership. All authorization
 ///         is delegated to RegistryDirectory.
 contract CLEARSettlement is Ownable {
-    enum TransferStatus { INITIATED, COMPLETED, CANCELLED, EXPIRED }
+    enum TransferStatus {
+        INITIATED,
+        COMPLETED,
+        CANCELLED,
+        EXPIRED
+    }
 
     struct Transfer {
         uint256 transferId;
@@ -52,11 +57,16 @@ contract CLEARSettlement is Ownable {
     error TransferNotExpirable(uint256 transferId);
 
     modifier onlyVerifiedRegistry() {
-        if (!directory.isVerified(msg.sender)) revert NotVerifiedRegistry(msg.sender);
+        if (!directory.isVerified(msg.sender))
+            revert NotVerifiedRegistry(msg.sender);
         _;
     }
 
-    constructor(address initialOwner, address directoryAddress, uint256 initialExpiryWindow) Ownable(initialOwner) {
+    constructor(
+        address initialOwner,
+        address directoryAddress,
+        uint256 initialExpiryWindow
+    ) Ownable(initialOwner) {
         directory = IRegistryDirectory(directoryAddress);
         expiryWindow = initialExpiryWindow;
         emit DirectorySet(directoryAddress);
@@ -78,7 +88,8 @@ contract CLEARSettlement is Ownable {
         bytes32 creditReference,
         uint256 amount
     ) external onlyVerifiedRegistry returns (uint256 transferId) {
-        if (!directory.isVerified(destRegistry)) revert InvalidDestinationRegistry(destRegistry);
+        if (!directory.isVerified(destRegistry))
+            revert InvalidDestinationRegistry(destRegistry);
         if (amount == 0) revert ZeroAmount();
 
         transferId = _nextTransferId++;
@@ -93,14 +104,24 @@ contract CLEARSettlement is Ownable {
             completedAt: 0
         });
 
-        emit TransferInitiated(transferId, msg.sender, destRegistry, creditReference, amount);
+        emit TransferInitiated(
+            transferId,
+            msg.sender,
+            destRegistry,
+            creditReference,
+            amount
+        );
     }
 
-    function completeTransfer(uint256 transferId) external onlyVerifiedRegistry {
+    function completeTransfer(
+        uint256 transferId
+    ) external onlyVerifiedRegistry {
         Transfer storage t = transfers[transferId];
         if (t.transferId == 0) revert TransferNotFound(transferId);
-        if (t.destRegistry != msg.sender) revert NotDestinationRegistry(transferId, msg.sender);
-        if (t.status != TransferStatus.INITIATED) revert InvalidTransferStatus(transferId, t.status);
+        if (t.destRegistry != msg.sender)
+            revert NotDestinationRegistry(transferId, msg.sender);
+        if (t.status != TransferStatus.INITIATED)
+            revert InvalidTransferStatus(transferId, t.status);
 
         t.status = TransferStatus.COMPLETED;
         t.completedAt = block.timestamp;
@@ -110,8 +131,10 @@ contract CLEARSettlement is Ownable {
     function cancelTransfer(uint256 transferId) external onlyVerifiedRegistry {
         Transfer storage t = transfers[transferId];
         if (t.transferId == 0) revert TransferNotFound(transferId);
-        if (t.sourceRegistry != msg.sender) revert NotSourceRegistry(transferId, msg.sender);
-        if (t.status != TransferStatus.INITIATED) revert InvalidTransferStatus(transferId, t.status);
+        if (t.sourceRegistry != msg.sender)
+            revert NotSourceRegistry(transferId, msg.sender);
+        if (t.status != TransferStatus.INITIATED)
+            revert InvalidTransferStatus(transferId, t.status);
 
         t.status = TransferStatus.CANCELLED;
         emit TransferCancelled(transferId);
@@ -120,15 +143,20 @@ contract CLEARSettlement is Ownable {
     function expireTransfer(uint256 transferId) external {
         Transfer storage t = transfers[transferId];
         if (t.transferId == 0) revert TransferNotFound(transferId);
-        if (t.status != TransferStatus.INITIATED) revert InvalidTransferStatus(transferId, t.status);
-        if (block.timestamp <= t.initiatedAt + expiryWindow) revert TransferNotExpirable(transferId);
+        if (t.status != TransferStatus.INITIATED)
+            revert InvalidTransferStatus(transferId, t.status);
+        if (block.timestamp <= t.initiatedAt + expiryWindow)
+            revert TransferNotExpirable(transferId);
 
         t.status = TransferStatus.EXPIRED;
         emit TransferExpired(transferId);
     }
 
-    function getTransfer(uint256 transferId) external view returns (Transfer memory) {
-        if (transfers[transferId].transferId == 0) revert TransferNotFound(transferId);
+    function getTransfer(
+        uint256 transferId
+    ) external view returns (Transfer memory) {
+        if (transfers[transferId].transferId == 0)
+            revert TransferNotFound(transferId);
         return transfers[transferId];
     }
 }

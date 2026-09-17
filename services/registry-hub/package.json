@@ -5,10 +5,10 @@
   "license": "Apache-2.0",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate --schema=src/db/control-plane/schema.prisma && tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "test": "vitest run",
+    "test": "prisma generate --schema=src/db/control-plane/schema.prisma && vitest run",
     "lint": "prettier --check 'src/**/*.ts' 'test/**/*.ts'",
     "prisma:generate": "prisma generate --schema=src/db/control-plane/schema.prisma"
   },

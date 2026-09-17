@@ -8,7 +8,7 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:fuzz": "forge test",
-    "lint": "prettier --check 'contracts/**/*.sol' 'test/**/*.ts' 'scripts/**/*.ts'",
+    "lint": "prettier --plugin=prettier-plugin-solidity --check 'contracts/**/*.sol' 'test/**/*.ts' 'scripts/**/*.ts'",
     "deploy:local": "hardhat run scripts/deploy.ts --network besu-local",
     "grant-trust:local": "hardhat run scripts/grant-genesis-trust.ts --network besu-local",
     "deploy:council-safe": "hardhat run scripts/deploy-council-safe.ts --network besu-local"
